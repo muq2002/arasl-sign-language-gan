@@ -1,0 +1,43 @@
+{
+  "results": {
+    "A": {
+      "recognition_acc": 0.3975,
+      "diversity": 0.18
+    },
+    "B": {
+      "recognition_acc": 0.3475,
+      "diversity": 0.1765
+    },
+    "C": {
+      "recognition_acc": 0.9675,
+      "diversity": 0.3004
+    }
+  },
+  "times": {
+    "A": 545.3,
+    "B": 521.7,
+    "C": 829.8,
+    "mediapipe_extract": 79.2,
+    "classifier": 348.6
+  },
+  "real_acc": 0.984000027179718,
+  "meta": {
+    "classes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "img": 64,
+    "per_class": 500,
+    "n_train": 4750,
+    "n_eval": 250
+  },
+  "mp_detection_rate": 0.0206
+}

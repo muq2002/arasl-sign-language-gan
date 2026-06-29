@@ -29,5 +29,9 @@ def landmarks(img):
 t0 = time.time()
 LM = np.stack([landmarks(x) for x in Xtr]).astype(np.float32)
 hi.close()
+mp_time = time.time() - t0
 np.save("LMtr.npy", LM)
-print(f"saved LMtr{LM.shape} | detection rate {LM.any(1).mean():.2%} | {time.time()-t0:.1f}s")
+import json
+json.dump({"mp_extract_seconds": round(mp_time, 1), "detection_rate": round(float(LM.any(1).mean()), 4),
+           "n_images": int(len(Xtr))}, open("lm_meta.json", "w"), indent=2)
+print(f"saved LMtr{LM.shape} | detection rate {LM.any(1).mean():.2%} | {mp_time:.1f}s")

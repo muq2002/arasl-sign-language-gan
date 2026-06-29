@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Local Test Results — A vs B vs C (5K images)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --b:#e8a450; --c:#3dba8c; --d:#e05555; --p:#9d8df5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#16233a 0%,transparent 60%),var(--bg);
+       color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; line-height:1.6}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 22px}
+  header.hero{padding:50px 22px 28px; text-align:center;
+    background:linear-gradient(135deg,#143a30 0%,#10233e 55%,#0d1117 100%); border-bottom:1px solid var(--line)}
+  .hero h1{font-size:2rem; margin:.1em 0}
+  .hero p{color:var(--muted); max-width:720px; margin:.4em auto}
+  .pill{display:inline-block; margin-top:8px; padding:5px 14px; border-radius:999px; font-size:.8rem;
+        background:#10261d; border:1px solid #1d4d3a; color:#8fe6c4}
+  section{padding:34px 0; border-bottom:1px solid var(--line)}
+  h2{font-size:1.45rem; margin:0 0 4px}
+  .lead{color:var(--muted); margin-top:0}
+
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:.95rem}
+  th,td{border:1px solid var(--line); padding:10px 13px; text-align:left}
+  th{background:var(--panel2)} td{color:var(--muted)} td b{color:var(--ink)}
+  .win{color:var(--c); font-weight:700}
+
+  /* bar charts */
+  .chart{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:16px 0}
+  .chart h3{margin:0 0 14px; font-size:1.05rem}
+  .row{display:flex; align-items:center; gap:12px; margin:11px 0}
+  .row .lab{flex:0 0 150px; font-size:.88rem; color:var(--ink)}
+  .track{flex:1; background:#0a0e14; border:1px solid var(--line); border-radius:8px; height:30px; position:relative; overflow:hidden}
+  .bar{height:100%; border-radius:7px 0 0 7px; display:flex; align-items:center; justify-content:flex-end;
+       padding-right:9px; font-size:.8rem; font-weight:700; color:#06101e; min-width:34px;
+       transition:width .6s ease}
+  .bA{background:linear-gradient(90deg,#3b82f6,var(--a))}
+  .bB{background:linear-gradient(90deg,#d4872f,var(--b))}
+  .bC{background:linear-gradient(90deg,#2f9d77,var(--c))}
+  .bAux{background:linear-gradient(90deg,#6b7480,#9aa7b4)}
+  .refline{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--d); z-index:3}
+  .refline span{position:absolute; top:-17px; left:50%; transform:translateX(-50%); font-size:.66rem; color:var(--d); white-space:nowrap}
+  .refline.good{background:#8fe6c4}.refline.good span{color:#8fe6c4}
+
+  .grids{display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:16px}
+  @media(max-width:760px){.grids{grid-template-columns:1fr}}
+  .gcard{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center}
+  .gcard h4{margin:0 0 9px; font-size:.95rem}
+  .gcard img{width:100%; image-rendering:pixelated; border-radius:8px; border:1px solid var(--line); background:#000}
+  .gcard.real h4{color:var(--p)} .gcard.A h4{color:var(--a)} .gcard.B h4{color:var(--b)} .gcard.C h4{color:var(--c)}
+  .gcard .cap{color:var(--soft); font-size:.78rem; margin-top:7px}
+
+  .note{border-left:4px solid var(--b); background:#241d0e; padding:12px 16px; border-radius:0 10px 10px 0; margin:14px 0; color:var(--muted)}
+  .note b{color:var(--ink)}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  footer{padding:30px 22px 50px; text-align:center; color:var(--soft); font-size:.85rem}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <h1>Local Test Results — A vs B vs C</h1>
+  <p>Real run on this PC (CPU) over <b>4,750 training images</b> from the same ArASL2018 dataset Model A/B used
+     (10 classes, 64×64, 6 epochs). Three models scored with the same metrics + training-time comparison.</p>
+  <span class="pill">classifier on real images = 0.984 · random chance = 0.10</span>
+</div></header>
+
+<!-- TABLE -->
+<section><div class="wrap">
+  <h2>Results</h2>
+  <table>
+    <tr><th>Model</th><th>Recognition Acc ↑</th><th>Diversity ↑</th><th>Train time</th></tr>
+    <tr><td><b>A</b> — no MediaPipe</td><td>0.398</td><td>0.180</td><td>545 s</td></tr>
+    <tr><td><b>B</b> — MediaPipe landmark loss</td><td>0.348</td><td>0.177</td><td>522 s</td></tr>
+    <tr><td><b>C</b> — structure-conditioned</td><td class="win">0.968</td><td class="win">0.300</td><td>830 s</td></tr>
+  </table>
+  <p class="lead">Model <b>C</b> reaches <b>0.968</b> recognition — almost matching real data (0.984) — and is the
+     most diverse, at the cost of being the slowest to train.</p>
+</div></section>
+
+<!-- RECOGNITION -->
+<section><div class="wrap">
+  <h2>Recognition accuracy <span style="color:var(--soft);font-size:.9rem">(higher = generated images are recognizable as the right letter)</span></h2>
+  <div class="chart">
+    <div class="row"><div class="lab">A · no MediaPipe</div><div class="track">
+      <div class="refline" style="left:10%"><span>chance 0.10</span></div>
+      <div class="refline good" style="left:98.4%"><span>real 0.98</span></div>
+      <div class="bar bA" style="width:39.8%">0.398</div></div></div>
+    <div class="row"><div class="lab">B · MediaPipe loss</div><div class="track">
+      <div class="refline" style="left:10%"></div><div class="refline good" style="left:98.4%"></div>
+      <div class="bar bB" style="width:34.8%">0.348</div></div></div>
+    <div class="row"><div class="lab">C · structure-cond</div><div class="track">
+      <div class="refline" style="left:10%"></div><div class="refline good" style="left:98.4%"></div>
+      <div class="bar bC" style="width:96.8%">0.968</div></div></div>
+  </div>
+</div></section>
+
+<!-- DIVERSITY -->
+<section><div class="wrap">
+  <h2>Diversity <span style="color:var(--soft);font-size:.9rem">(higher = less mode collapse)</span></h2>
+  <div class="chart">
+    <div class="row"><div class="lab">A · no MediaPipe</div><div class="track"><div class="bar bA" style="width:59.9%">0.180</div></div></div>
+    <div class="row"><div class="lab">B · MediaPipe loss</div><div class="track"><div class="bar bB" style="width:58.8%">0.177</div></div></div>
+    <div class="row"><div class="lab">C · structure-cond</div><div class="track"><div class="bar bC" style="width:100%">0.300</div></div></div>
+  </div>
+</div></section>
+
+<!-- TIMING -->
+<section><div class="wrap">
+  <h2>Training-time comparison <span style="color:var(--soft);font-size:.9rem">(CPU — lower = faster)</span></h2>
+  <div class="chart">
+    <h3>Per-model training time</h3>
+    <div class="row"><div class="lab">A · no MediaPipe</div><div class="track"><div class="bar bA" style="width:65.7%">545 s</div></div></div>
+    <div class="row"><div class="lab">B · MediaPipe loss</div><div class="track"><div class="bar bB" style="width:62.9%">522 s</div></div></div>
+    <div class="row"><div class="lab">C · structure-cond</div><div class="track"><div class="bar bC" style="width:100%">830 s</div></div></div>
+  </div>
+  <div class="chart">
+    <h3>One-time setup costs</h3>
+    <div class="row"><div class="lab">MediaPipe extract (B)</div><div class="track"><div class="bar bAux" style="width:9.5%">79 s</div></div></div>
+    <div class="row"><div class="lab">Classifier (metric)</div><div class="track"><div class="bar bAux" style="width:42%">349 s</div></div></div>
+  </div>
+  <p class="lead"><b>C is ~1.5× slower</b> to train than A/B (heavier conditioned encoder + paired discriminator) —
+     a fair trade for its far higher quality. B costs an extra 79 s of MediaPipe extraction for essentially no gain.</p>
+</div></section>
+
+<!-- SAMPLES -->
+<section><div class="wrap">
+  <h2>Generated samples <span style="color:var(--soft);font-size:.9rem">(5 classes × 6 samples each)</span></h2>
+  <div class="grids">
+    <div class="gcard real"><h4>Real images</h4><img src="assets/samples_real.png" alt="real"><div class="cap">ground truth</div></div>
+    <div class="gcard C"><h4>Model C — structure-conditioned</h4><img src="assets/samples_C.png" alt="C"><div class="cap">recognizable &amp; varied hand shapes</div></div>
+    <div class="gcard A"><h4>Model A — no MediaPipe</h4><img src="assets/samples_A.png" alt="A"><div class="cap">blurrier, less class-distinct</div></div>
+    <div class="gcard B"><h4>Model B — MediaPipe loss</h4><img src="assets/samples_B.png" alt="B"><div class="cap">≈ A (landmark signal ~2% coverage)</div></div>
+  </div>
+</div></section>
+
+<!-- CAVEATS -->
+<section><div class="wrap">
+  <h2>Honest scope</h2>
+  <div class="note">
+    <b>This is a reduced run, not the full benchmark.</b> 10 of 32 classes · 4,750 images · 64×64 · 6 epochs ·
+    single seed · CPU (no GPU). FID/LPIPS omitted (need PyTorch). MediaPipe detection at 64px was only
+    <b>2.06%</b>, which is why Model B ≈ Model A. Treat magnitudes as <b>directional</b>; the ordering
+    <b>C ≫ A ≈ B</b> is the real signal and matches the design analysis.
+  </div>
+  <p class="lead">Source data: <span class="mono">pain/ArASL_Database_Grayscale</span> (Hugging Face) — same ArASL2018
+     used by Model A/B. Reproduce via <span class="mono">local_run/prep_data.py → extract_lm.py → train_eval.py</span>.</p>
+</div></section>
+
+<footer><div class="wrap">Local A/B/C test · ArASL2018 · generated from <span class="mono">results_5k.json</span> + <span class="mono">viz_out/</span></div></footer>
+</body>
+</html>

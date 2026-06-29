@@ -3,7 +3,7 @@
 import io, json, numpy as np, pandas as pd, cv2
 from PIL import Image
 
-SUBSET_CLASSES, PER_CLASS, IMG_SIZE, SEED = 3, 150, 64, 42
+SUBSET_CLASSES, PER_CLASS, IMG_SIZE, SEED = 10, 500, 64, 42   # ~5,000 images
 np.random.seed(SEED)
 
 df = pd.read_parquet("arasl.parquet")

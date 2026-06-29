@@ -25,3 +25,9 @@ mp_venv/
 *.parquet
 local_run/*.npy
 local_run/*.log
+
+# extracted full dataset (local only)
+local_run/ArASL_dataset/
+local_run/dataset_sample/
+local_run/*.parquet
+local_run/viz_out/

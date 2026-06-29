@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
-"""Step 3 (arasl_venv, TF 2.21): train Model A/B/C on the prepared arrays, evaluate, compare."""
-import time, json, warnings, numpy as np
+"""Step 3 (arasl_venv, TF): train A/B/C on prepared arrays, time each, eval, save viz."""
+import time, json, os, warnings, numpy as np
 warnings.filterwarnings("ignore")
 import tensorflow as tf
 from tensorflow.keras import layers
+from PIL import Image
 
 IMG_SIZE, Z_DIM, BATCH, EPOCHS, SEED = 64, 64, 16, 6, 42
 np.random.seed(SEED); tf.random.set_seed(SEED)
+os.makedirs("viz_out", exist_ok=True)
 
 Xtr = np.load("Xtr.npy"); ytr = np.load("ytr.npy")
 Xev = np.load("Xev.npy"); yev = np.load("yev.npy")
 Ctr = np.load("Ctr.npy"); LMtr = np.load("LMtr.npy")
 meta = json.load(open("prep_meta.json"))
+mpm = json.load(open("lm_meta.json")) if os.path.exists("lm_meta.json") else {"mp_extract_seconds": None, "detection_rate": LMtr.any(1).mean()}
 num_classes = len(meta["classes"])
-print(f"TF {tf.__version__} CPU | classes {meta['classes']} | {len(Xtr)} train | "
-      f"mp detect {LMtr.any(1).mean():.2%} | struct cov 100%")
+print(f"TF {tf.__version__} CPU | {num_classes} classes | {len(Xtr)} train images | "
+      f"mp detect {float(mpm['detection_rate']):.2%}")
 
 def G_AB():
     n = tf.keras.Input((Z_DIM,)); l = tf.keras.Input((num_classes,))
@@ -72,8 +75,10 @@ def train(kind):
     if kind == "A": G, D = G_AB(), D_AB()
     elif kind == "B":
         G, D = G_AB(), D_AB(); reg = regressor(); v = LMtr.any(1)
-        reg.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss="mse")
-        reg.fit(Xtr[v], np.clip(LMtr[v], 0, 1), epochs=6, batch_size=32, verbose=0); reg.trainable = False
+        if v.sum() > 5:
+            reg.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss="mse")
+            reg.fit(Xtr[v], np.clip(LMtr[v], 0, 1), epochs=6, batch_size=32, verbose=0)
+        reg.trainable = False
     else: G, D = G_C(), D_C()
     n = len(Xtr); steps = n // BATCH
     for ep in range(EPOCHS):
@@ -99,9 +104,12 @@ def train(kind):
                     gl += 2.0 * tf.reduce_mean(tf.square(pl - lm) * val)
             go.apply_gradients(zip(t.gradient(gl, G.trainable_variables), G.trainable_variables))
         print(f"  [{kind}] ep{ep+1}/{EPOCHS} D={float(dl):.3f} G={float(gl):.3f}")
-    print(f"  [{kind}] trained {time.time()-t0:.1f}s")
-    return G
+    el = time.time() - t0
+    print(f"  [{kind}] trained {el:.1f}s")
+    return G, el
 
+# strong classifier for the recognition metric (trained on REAL)
+tc = time.time()
 clf = tf.keras.Sequential([tf.keras.Input((IMG_SIZE, IMG_SIZE, 1)),
     layers.Conv2D(32, 3, padding="same"), layers.BatchNormalization(), layers.LeakyReLU(0.2), layers.MaxPooling2D(),
     layers.Conv2D(64, 3, padding="same"), layers.BatchNormalization(), layers.LeakyReLU(0.2), layers.MaxPooling2D(),
@@ -110,8 +118,9 @@ clf = tf.keras.Sequential([tf.keras.Input((IMG_SIZE, IMG_SIZE, 1)),
     layers.Dense(num_classes)])
 clf.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=["accuracy"])
 clf.fit(Xtr, ytr, epochs=40, batch_size=32, verbose=0)
+clf_time = time.time() - tc
 real_acc = float(clf.evaluate(Xev, yev, verbose=0)[1])
-print(f"classifier real eval-acc = {real_acc:.3f}")
+print(f"classifier real eval-acc = {real_acc:.3f}  ({clf_time:.1f}s)")
 
 def gen(kind, G, n_per=40, seed=0):
     tf.random.set_seed(seed); outs, ys = [], []
@@ -132,18 +141,54 @@ def evaluate(kind, G):
     div = float(np.mean([np.mean(np.abs(fl[i]-fl[j])) for i in range(60) for j in range(i+1, 60)]))
     return {"recognition_acc": round(acc, 4), "diversity": round(div, 4)}
 
-results = {}
+# ── sample-grid PNGs (real + each model) ────────────────────────────────────
+GC = min(5, num_classes); GS = 6
+def to_u8(a): return (a[:, :, 0]*127.5+127.5).clip(0, 255).astype(np.uint8)
+def save_grid(name, cells):
+    H = W = IMG_SIZE; pad = 2
+    grid = np.full((GC*(H+pad)+pad, GS*(W+pad)+pad), 30, np.uint8)
+    for i, im in enumerate(cells):
+        r, c = divmod(i, GS); y = pad+r*(H+pad); x = pad+c*(W+pad)
+        grid[y:y+H, x:x+W] = im
+    Image.fromarray(grid).save(f"viz_out/{name}.png")
+def real_cells():
+    cells = []
+    for c in range(GC):
+        for i in np.where(ytr == c)[0][:GS]: cells.append(to_u8(Xtr[i]))
+    return cells
+def gen_cells(kind, G):
+    cells = []
+    for c in range(GC):
+        nz = tf.random.normal([GS, Z_DIM], seed=c); lbl = oh(np.full(GS, c))
+        if kind == "C":
+            pool = np.where(ytr == c)[0]; ci = np.random.default_rng(c).choice(pool, GS)
+            f = G([tf.constant(Ctr[ci]), lbl, nz]).numpy()
+        else:
+            f = G([nz, lbl]).numpy()
+        for j in range(GS): cells.append(to_u8(f[j]))
+    return cells
+
+results, times, models = {}, {}, {}
 for kind in ["A", "B", "C"]:
     print(f"=== Training Model {kind} ===")
-    results[kind] = evaluate(kind, train(kind))
-    print(f"  Model {kind}: {results[kind]}")
+    G, el = train(kind); models[kind] = G; times[kind] = round(el, 1)
+    results[kind] = evaluate(kind, G)
+    print(f"  Model {kind}: {results[kind]}  time {times[kind]}s")
 
-print("\n================ RESULTS (reduced CPU run) ================")
-print(f"{'Model':<26}{'Recognition Acc':>16}{'Diversity':>12}")
+save_grid("samples_real", real_cells())
+for kind in ["A", "B", "C"]:
+    save_grid(f"samples_{kind}", gen_cells(kind, models[kind]))
+
+times["mediapipe_extract"] = mpm.get("mp_extract_seconds")
+times["classifier"] = round(clf_time, 1)
+
+print("\n================ RESULTS (5K-image CPU run) ================")
+print(f"{'Model':<26}{'Recognition':>13}{'Diversity':>12}{'Train time(s)':>15}")
 nm = {"A": "A (no MediaPipe)", "B": "B (MediaPipe loss)", "C": "C (structure-cond)"}
 for k in ["A", "B", "C"]:
-    print(f"{nm[k]:<26}{results[k]['recognition_acc']:>16}{results[k]['diversity']:>12}")
-print(f"\nclassifier sanity(real)={real_acc:.3f} | classes={meta['classes']} | "
-      f"{meta['per_class']}/class | {IMG_SIZE}px | {EPOCHS} epochs | random chance={1/num_classes:.2f}")
-json.dump({"results": results, "real_acc": real_acc, "meta": meta}, open("local_results.json", "w"), indent=2)
-print("saved local_results.json")
+    print(f"{nm[k]:<26}{results[k]['recognition_acc']:>13}{results[k]['diversity']:>12}{times[k]:>15}")
+print(f"\nMediaPipe extract: {times['mediapipe_extract']}s | classifier: {times['classifier']}s")
+print(f"classifier real-acc={real_acc:.3f} | {num_classes} classes | {len(Xtr)} train | {IMG_SIZE}px | {EPOCHS} ep | chance={1/num_classes:.2f}")
+json.dump({"results": results, "times": times, "real_acc": real_acc, "meta": meta,
+           "mp_detection_rate": float(mpm["detection_rate"])}, open("results_5k.json", "w"), indent=2)
+print("saved results_5k.json + viz_out/*.png")
