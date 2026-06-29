@@ -95,16 +95,32 @@
 <!-- EVIDENCE -->
 <section id="evidence"><div class="wrap">
   <h2>Our own evidence (local A/B/C run)</h2>
-  <p class="lead">Real CPU run · 4,750 images · 10 classes · 64px · 6 epochs · classifier-on-real (GAN-test ref) = 0.984 · chance = 0.10</p>
+  <p class="lead">Comprehensive CPU run · 4,750 train + 250 held-out · 10 classes · 64px · 6 epochs · reference classifier on real = 0.956 · chance = 0.10</p>
   <table>
-    <tr><th>Model</th><th>Recognition (GAN-test) ↑</th><th>Diversity ↑</th><th>Train time</th></tr>
-    <tr><td><b>A</b> — no MediaPipe</td><td>0.398</td><td>0.180</td><td>545 s</td></tr>
-    <tr><td><b>B</b> — MediaPipe landmark loss</td><td>0.348</td><td>0.177</td><td>522 s</td></tr>
-    <tr><td><b>C</b> — structure-conditioned</td><td class="win">0.968</td><td class="win">0.300</td><td>830 s</td></tr>
+    <tr><th>Model</th><th>GAN-test ↑<br><span style="font-weight:400;color:var(--soft)">real→generated</span></th>
+        <th>GAN-train ↑<br><span style="font-weight:400;color:var(--soft)">generated→real</span></th><th>Diversity ↑</th><th>Train time</th></tr>
+    <tr><td><b>A</b> — no MediaPipe</td><td>0.447</td><td>0.144</td><td>0.105</td><td>432 s</td></tr>
+    <tr><td><b>B</b> — MediaPipe landmark loss</td><td>0.547</td><td>0.232</td><td>0.125</td><td>372 s</td></tr>
+    <tr><td><b>C</b> — structure-conditioned</td><td class="win">0.947</td><td>0.204</td><td class="win">0.330</td><td>889 s</td></tr>
   </table>
-  <p class="lead"><b>C ≫ A ≈ B.</b> C's recognizability (0.968) almost matches real data (0.984); B added nothing
-     (MediaPipe detected only <b>2%</b> of hands). This miniature result mirrors the literature consensus.
-     Full charts: <a href="../local_run/visualizations/index.html">local_run/visualizations</a>.</p>
+  <p class="lead"><b>C ≫ A ≈ B.</b> C's recognizability (0.947) almost matches real data (0.956), and C is uniformly
+     0.90–1.0 across every class while A/B are uneven. B's MediaPipe detection was only <b>2%</b>, so its landmark
+     loss added little. Full charts: <a href="../experiments/visualizations/index.html">experiments/visualizations</a>.</p>
+
+  <h3 style="color:var(--c);margin-top:24px">★ Held-out structure test — does C generalize or just copy?</h3>
+  <p class="lead">Model C fed structure maps from the <b>250 held-out images it never trained on</b>:</p>
+  <table>
+    <tr><th>Metric</th><th>Value</th><th>Meaning</th></tr>
+    <tr><td>Recognition on <b>held-out</b> structures</td><td class="win">0.928</td><td>renders unseen structures correctly</td></tr>
+    <tr><td>Recognition on <b>training</b> structures</td><td>0.952</td><td>reference</td></tr>
+    <tr><td><b>Generalization gap</b></td><td class="win">0.024</td><td>tiny → generalizes, does <b>not</b> memorize</td></tr>
+    <tr><td>Fidelity <b>SSIM</b>(output vs real target)</td><td class="win">0.950</td><td>faithfully reconstructs the unseen target</td></tr>
+  </table>
+  <figure style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;margin:14px 0">
+    <img src="../experiments/visualizations/assets/heldout_C.png" alt="held-out grid" style="max-width:340px;border-radius:8px">
+    <figcaption style="color:var(--muted);font-size:.88rem;margin-top:9px">Columns: <b>unseen structure</b> → <b>C's output</b> → <b>real target</b>.
+      C reconstructs hands it never trained on (SSIM 0.95) — proof it learned the structure→image mapping, not copying.</figcaption>
+  </figure>
 </div></section>
 
 <!-- LITERATURE -->

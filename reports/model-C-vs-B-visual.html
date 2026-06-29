@@ -106,16 +106,16 @@
   <h2>The result — generated samples</h2>
   <p class="lead">5 classes × 6 samples each, from the 5K run.</p>
   <div class="two">
-    <figure><img src="../local_run/visualizations/assets/samples_real.png" alt="real"><figcaption style="color:var(--p)">Real images (ground truth)</figcaption></figure>
-    <figure class="C"><img src="../local_run/visualizations/assets/samples_C.png" alt="C"><figcaption style="color:var(--c)"><b>Model C</b> — recognizable &amp; varied hand shapes</figcaption></figure>
-    <figure class="B"><img src="../local_run/visualizations/assets/samples_B.png" alt="B"><figcaption style="color:var(--b)"><b>Model B</b> — blurry, near-identical (collapsed)</figcaption></figure>
-    <figure><img src="../local_run/visualizations/assets/samples_A.png" alt="A"><figcaption style="color:var(--a)">Model A — same collapse as B</figcaption></figure>
+    <figure><img src="../experiments/visualizations/assets/samples_real.png" alt="real"><figcaption style="color:var(--p)">Real images (ground truth)</figcaption></figure>
+    <figure class="C"><img src="../experiments/visualizations/assets/samples_C.png" alt="C"><figcaption style="color:var(--c)"><b>Model C</b> — recognizable &amp; varied hand shapes</figcaption></figure>
+    <figure class="B"><img src="../experiments/visualizations/assets/samples_B.png" alt="B"><figcaption style="color:var(--b)"><b>Model B</b> — blurry, near-identical (collapsed)</figcaption></figure>
+    <figure><img src="../experiments/visualizations/assets/samples_A.png" alt="A"><figcaption style="color:var(--a)">Model A — same collapse as B</figcaption></figure>
   </div>
   <table>
-    <tr><th>Model</th><th>Structural signal</th><th>Coverage</th><th>Recognition ↑</th><th>Diversity ↑</th></tr>
-    <tr><td><b>C</b></td><td>edge+silhouette+distance (input)</td><td class="win">100%</td><td class="win">0.968</td><td class="win">0.300</td></tr>
-    <tr><td><b>B</b></td><td>MediaPipe landmark (loss)</td><td class="bad">~2%</td><td>0.348</td><td>0.177</td></tr>
-    <tr><td><b>A</b></td><td>none</td><td>—</td><td>0.398</td><td>0.180</td></tr>
+    <tr><th>Model</th><th>Structural signal</th><th>Coverage</th><th>GAN-test ↑</th><th>Diversity ↑</th></tr>
+    <tr><td><b>C</b></td><td>edge+silhouette+distance (input)</td><td class="win">100%</td><td class="win">0.947</td><td class="win">0.330</td></tr>
+    <tr><td><b>B</b></td><td>MediaPipe landmark (loss)</td><td class="bad">~2%</td><td>0.547</td><td>0.125</td></tr>
+    <tr><td><b>A</b></td><td>none</td><td>—</td><td>0.447</td><td>0.105</td></tr>
   </table>
   <p class="lead"><b>Bottom line:</b> Model C wins because it always has a structural signal <i>and</i> that signal is
      correctly paired with the target image. Model B's MediaPipe signal exists for only ~2% of hands and was never

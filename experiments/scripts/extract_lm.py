@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 """Step 2 (mp_venv): MediaPipe landmarks for Model B -> LMtr.npy. Aligned to Xtr.npy."""
-import time, numpy as np, cv2
+import time, os, numpy as np, cv2
 import mediapipe as mp
 try:
     H = mp.solutions.hands.Hands
 except AttributeError:
     from mediapipe.python.solutions import hands as _h; H = _h.Hands
 
+# arrays live in ../arrays relative to this script (scripts/ -> experiments/)
+ARR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "arrays")
+A = lambda f: os.path.join(ARR, f)
 IMG_SIZE = 64
-Xtr = np.load("Xtr.npy")
+Xtr = np.load(A("Xtr.npy"))
 hi = H(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.3, model_complexity=1)
 
 def _skin(u8):
@@ -30,8 +33,8 @@ t0 = time.time()
 LM = np.stack([landmarks(x) for x in Xtr]).astype(np.float32)
 hi.close()
 mp_time = time.time() - t0
-np.save("LMtr.npy", LM)
+np.save(A("LMtr.npy"), LM)
 import json
 json.dump({"mp_extract_seconds": round(mp_time, 1), "detection_rate": round(float(LM.any(1).mean()), 4),
-           "n_images": int(len(Xtr))}, open("lm_meta.json", "w"), indent=2)
+           "n_images": int(len(Xtr))}, open(A("lm_meta.json"), "w"), indent=2)
 print(f"saved LMtr{LM.shape} | detection rate {LM.any(1).mean():.2%} | {mp_time:.1f}s")

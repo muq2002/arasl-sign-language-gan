@@ -8,13 +8,18 @@ from PIL import Image
 
 IMG_SIZE, Z_DIM, BATCH, EPOCHS, SEED = 64, 64, 16, 6, 42
 np.random.seed(SEED); tf.random.set_seed(SEED)
-os.makedirs("viz_out", exist_ok=True)
 
-Xtr = np.load("Xtr.npy"); ytr = np.load("ytr.npy")
-Xev = np.load("Xev.npy"); yev = np.load("yev.npy")
-Ctr = np.load("Ctr.npy"); LMtr = np.load("LMtr.npy")
-meta = json.load(open("prep_meta.json"))
-mpm = json.load(open("lm_meta.json")) if os.path.exists("lm_meta.json") else {"mp_extract_seconds": None, "detection_rate": LMtr.any(1).mean()}
+# paths: scripts/ -> experiments/{arrays,results,visualizations}
+_S = os.path.dirname(os.path.abspath(__file__)); _E = os.path.dirname(_S)
+ARR = os.path.join(_E, "arrays"); RES = os.path.join(_E, "results"); VIZ = os.path.join(_E, "visualizations", "assets")
+for _d in (RES, VIZ): os.makedirs(_d, exist_ok=True)
+A = lambda f: os.path.join(ARR, f); R = lambda f: os.path.join(RES, f); V = lambda f: os.path.join(VIZ, f)
+
+Xtr = np.load(A("Xtr.npy")); ytr = np.load(A("ytr.npy"))
+Xev = np.load(A("Xev.npy")); yev = np.load(A("yev.npy"))
+Ctr = np.load(A("Ctr.npy")); LMtr = np.load(A("LMtr.npy"))
+meta = json.load(open(A("prep_meta.json")))
+mpm = json.load(open(A("lm_meta.json"))) if os.path.exists(A("lm_meta.json")) else {"mp_extract_seconds": None, "detection_rate": LMtr.any(1).mean()}
 num_classes = len(meta["classes"])
 print(f"TF {tf.__version__} CPU | {num_classes} classes | {len(Xtr)} train images | "
       f"mp detect {float(mpm['detection_rate']):.2%}")
@@ -150,7 +155,7 @@ def save_grid(name, cells):
     for i, im in enumerate(cells):
         r, c = divmod(i, GS); y = pad+r*(H+pad); x = pad+c*(W+pad)
         grid[y:y+H, x:x+W] = im
-    Image.fromarray(grid).save(f"viz_out/{name}.png")
+    Image.fromarray(grid).save(V(f"{name}.png"))
 def real_cells():
     cells = []
     for c in range(GC):
@@ -190,5 +195,5 @@ for k in ["A", "B", "C"]:
 print(f"\nMediaPipe extract: {times['mediapipe_extract']}s | classifier: {times['classifier']}s")
 print(f"classifier real-acc={real_acc:.3f} | {num_classes} classes | {len(Xtr)} train | {IMG_SIZE}px | {EPOCHS} ep | chance={1/num_classes:.2f}")
 json.dump({"results": results, "times": times, "real_acc": real_acc, "meta": meta,
-           "mp_detection_rate": float(mpm["detection_rate"])}, open("results_5k.json", "w"), indent=2)
-print("saved results_5k.json + viz_out/*.png")
+           "mp_detection_rate": float(mpm["detection_rate"])}, open(R("results_5k.json"), "w"), indent=2)
+print("saved results/results_5k.json + visualizations/assets/*.png")

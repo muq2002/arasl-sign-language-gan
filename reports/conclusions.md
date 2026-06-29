@@ -1,7 +1,7 @@
 # Conclusions
 
 Drawn from (a) the literature search in [`literature-search.md`](literature-search.md)
-and (b) our own real local A/B/C run ([`../local_run/`](../local_run/)).
+and (b) our own real local A/B/C run ([`../experiments/`](../experiments/)).
 
 ---
 

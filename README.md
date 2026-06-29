@@ -28,14 +28,28 @@ an A-vs-B comparison, the evaluation suite, and honest engineering notes.
 ```
 .
 ├── README.md
-├── docs/
-│   ├── index.html          # visual walkthrough of Model A & Model B
-│   └── assets/
-│       └── proposal.jpg     # research proposal (diffusion direction)
-└── notebooks/
-    ├── model_A_cgan_128_no_mediapipe.ipynb
-    └── model_B_cgan_128_mediapipe.ipynb
+├── docs/             # HTML walkthroughs (models, generator, optimizations, problems, Model C)
+├── notebooks/        # A, B, optimized A/B, and the A/B/C comparison notebooks
+├── src/              # optimized, modular reimplementation (config, models, data, training)
+├── reports/          # literature search + Model C prior-art + verdict/opinion (HTML + md)
+├── experiments/      # real local A/B/C runs
+│   ├── scripts/          # data prep, MediaPipe landmarks, train + evaluate
+│   ├── arrays/           # prepared .npy (gitignored)
+│   ├── results/          # metrics JSON + logs
+│   └── visualizations/   # HTML report + image grids
+└── data/             # dataset (gitignored — large): ArASL_dataset/, samples/, arasl.parquet
 ```
+
+## A third model — Model C (structure-conditioned)
+
+Beyond the two original models, this repo evaluates **Model C**, which conditions
+the generator on a **structure map computed from each image** (Canny edge +
+silhouette + distance transform) instead of using MediaPipe as a loss. In the local
+5K runs it wins decisively (**GAN-test 0.95 vs ~0.5 for A/B**) and a **held-out
+structure test** confirms it generalizes (recognition 0.93 on unseen structures,
+generalization gap 0.024, fidelity SSIM 0.95). See [`reports/`](reports/) for the
+verdict, prior-art search, and visual A-vs-B-vs-C explanation, and
+[`experiments/`](experiments/) for the raw runs.
 
 ## Dataset
 

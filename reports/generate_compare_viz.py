@@ -14,7 +14,7 @@ except AttributeError:
     H = _h.Hands; HC = _h.HAND_CONNECTIONS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA = os.path.join(HERE, "..", "local_run", "ArASL_dataset")
+DATA = os.path.join(HERE, "..", "data", "ArASL_dataset")
 OUT = os.path.join(HERE, "assets"); os.makedirs(OUT, exist_ok=True)
 plt.rcParams.update({"figure.facecolor": "#0d1117", "axes.facecolor": "#0d1117",
                      "text.color": "#e6edf3", "axes.edgecolor": "#2a3340"})

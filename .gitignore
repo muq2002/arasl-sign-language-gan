@@ -19,15 +19,14 @@ Thumbs.db
 desktop.ini
 .DS_Store
 
-# local run artifacts
+# experiment artifacts (local only — virtualenvs, big arrays, logs)
 arasl_venv/
 mp_venv/
 *.parquet
-local_run/*.npy
-local_run/*.log
+experiments/arrays/
+experiments/results/*.log
 
-# extracted full dataset (local only)
-local_run/ArASL_dataset/
-local_run/dataset_sample/
-local_run/*.parquet
-local_run/viz_out/
+# dataset (local only — large; regenerate via experiments/scripts)
+data/ArASL_dataset/
+data/samples/
+data/*.parquet

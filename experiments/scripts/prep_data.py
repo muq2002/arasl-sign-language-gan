@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 """Step 1 (arasl_venv): deterministic data prep -> saves arrays both other scripts share."""
-import io, json, numpy as np, pandas as pd, cv2
+import io, json, os, numpy as np, pandas as pd, cv2
 from PIL import Image
+
+# paths resolve relative to this file: scripts/ -> experiments/ -> project/
+_S = os.path.dirname(os.path.abspath(__file__)); _E = os.path.dirname(_S); _P = os.path.dirname(_E)
+DATA = os.path.join(_P, "data"); ARR = os.path.join(_E, "arrays")
+os.makedirs(ARR, exist_ok=True)
+A = lambda f: os.path.join(ARR, f); D = lambda f: os.path.join(DATA, f)
 
 SUBSET_CLASSES, PER_CLASS, IMG_SIZE, SEED = 10, 500, 64, 42   # ~5,000 images
 np.random.seed(SEED)
 
-df = pd.read_parquet("arasl.parquet")
+df = pd.read_parquet(D("arasl.parquet"))
 lab_col = "label" if "label" in df.columns else df.columns[-1]
 img_col = "image" if "image" in df.columns else df.columns[0]
 print(f"dataset rows={len(df)} classes={df[lab_col].nunique()} (same ArASL2018 as Model A/B)")
@@ -33,10 +39,10 @@ def structure_map(img):
     return (np.stack([edge, sil, dist], -1).astype(np.float32) / 127.5) - 1.0
 Ctr = np.stack([structure_map(x) for x in Xtr]).astype(np.float32)
 
-np.save("Xtr.npy", Xtr); np.save("ytr.npy", ytr)
-np.save("Xev.npy", Xev); np.save("yev.npy", yev); np.save("Ctr.npy", Ctr)
+np.save(A("Xtr.npy"), Xtr); np.save(A("ytr.npy"), ytr)
+np.save(A("Xev.npy"), Xev); np.save(A("yev.npy"), yev); np.save(A("Ctr.npy"), Ctr)
 json.dump({"classes": [int(c) for c in chosen], "img": IMG_SIZE,
            "per_class": PER_CLASS, "n_train": int(len(Xtr)), "n_eval": int(len(Xev))},
-          open("prep_meta.json", "w"), indent=2)
+          open(A("prep_meta.json"), "w"), indent=2)
 print(f"saved Xtr{Xtr.shape} Ctr{Ctr.shape} | classes {chosen} | "
       f"struct coverage {float(np.mean([np.any(c>-0.99) for c in Ctr])):.2f}")
