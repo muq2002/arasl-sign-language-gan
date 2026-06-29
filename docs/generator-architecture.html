@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Generator Architecture — Animated Walkthrough</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --a2:#3b82f6; --b:#3dba8c; --c:#e8a450; --d:#e05555; --p:#9d8df5;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#16233a 0%,transparent 60%),var(--bg);
+       color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; line-height:1.6}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 22px}
+  a{color:var(--a)}
+
+  header.hero{padding:54px 22px 30px; text-align:center;
+    background:linear-gradient(135deg,#1b2a4a 0%,#10233e 45%,#0d1117 100%); border-bottom:1px solid var(--line)}
+  .hero h1{font-size:2.2rem; margin:.1em 0}
+  .hero p{color:var(--muted); max-width:680px; margin:.4em auto}
+  .back{display:inline-block; margin-top:14px; font-size:.9rem; color:var(--muted); text-decoration:none;
+        border:1px solid var(--line); padding:6px 14px; border-radius:999px}
+  .back:hover{color:var(--ink); background:var(--panel)}
+
+  /* ── controls ── */
+  .controls{display:flex; gap:12px; justify-content:center; align-items:center; margin:22px 0 6px; flex-wrap:wrap}
+  button.btn{background:linear-gradient(135deg,var(--a),var(--a2)); color:#06101e; border:0; font-weight:700;
+    padding:9px 18px; border-radius:10px; cursor:pointer; font-size:.92rem}
+  button.btn.alt{background:var(--panel2); color:var(--ink); border:1px solid var(--line)}
+  .hint{color:var(--soft); font-size:.82rem}
+
+  /* ── PIPELINE STAGE ── */
+  .stage{position:relative; background:var(--panel); border:1px solid var(--line); border-radius:18px;
+         padding:34px 18px 26px; margin:18px 0 8px; overflow:hidden}
+  .rail{position:absolute; top:50%; left:3%; right:3%; height:3px; transform:translateY(-50%);
+        background:linear-gradient(90deg,var(--p),var(--a),var(--b),var(--c)); opacity:.25; border-radius:3px}
+  /* travelling pulse */
+  .pulse{position:absolute; top:50%; left:3%; width:16px; height:16px; border-radius:50%; transform:translate(-50%,-50%);
+         background:#fff; box-shadow:0 0 18px 6px var(--a);}
+  .play .pulse{animation:travel 7s linear infinite}
+  @keyframes travel{0%{left:3%;box-shadow:0 0 18px 6px var(--p)}
+    33%{box-shadow:0 0 18px 6px var(--a)} 66%{box-shadow:0 0 18px 6px var(--b)}
+    100%{left:97%;box-shadow:0 0 18px 6px var(--c)}}
+
+  .blocks{position:relative; display:flex; align-items:flex-end; justify-content:space-between; gap:6px; z-index:2}
+  .blk{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; min-width:0}
+  /* the growing feature-map cube */
+  .cube{border-radius:8px; border:1.5px solid; display:grid; place-items:center; position:relative;
+        font-size:.62rem; font-family:ui-monospace,Consolas,monospace; color:#dfe8f2; background:rgba(255,255,255,.03);
+        transition:transform .3s}
+  .play .cube{animation:pop .6s ease both}
+  @keyframes pop{0%{transform:scale(.4);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1}}
+  .cube .res{position:absolute; bottom:-16px; font-size:.6rem; color:var(--soft); white-space:nowrap}
+  .blk .name{font-size:.66rem; color:var(--muted); text-align:center; line-height:1.25; min-height:2.4em}
+  .blk .ch{font-size:.6rem; color:var(--soft); font-family:ui-monospace,Consolas,monospace}
+
+  /* per-block accent colors */
+  .c-in .cube{border-color:var(--p); box-shadow:0 0 12px -2px var(--p)}
+  .c-dense .cube{border-color:var(--a); box-shadow:0 0 12px -2px var(--a)}
+  .c-up .cube{border-color:var(--a2); box-shadow:0 0 10px -3px var(--a2)}
+  .c-attn .cube{border-color:var(--b); box-shadow:0 0 16px 0 var(--b)}
+  .play .c-attn .cube{animation:pop .6s ease both, glow 1.8s ease-in-out infinite 1s}
+  @keyframes glow{0%,100%{box-shadow:0 0 12px 0 var(--b)} 50%{box-shadow:0 0 26px 4px var(--b)}}
+  .c-out .cube{border-color:var(--c); box-shadow:0 0 16px 0 var(--c)}
+
+  /* stagger reveal */
+  .play .blk{animation:rise .5s ease both}
+  @keyframes rise{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:translateY(0)}}
+
+  /* noise inflow particles */
+  .feed{display:flex; gap:16px; justify-content:center; margin-bottom:10px; flex-wrap:wrap}
+  .seed{display:flex; align-items:center; gap:8px; font-size:.8rem; color:var(--muted);
+        background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:7px 12px}
+  .seed .dotrow{display:inline-flex; gap:3px}
+  .seed i{width:6px;height:6px;border-radius:50%;background:var(--p); display:inline-block}
+  .play .seed i{animation:blink 1.2s ease-in-out infinite}
+  .seed i:nth-child(2){animation-delay:.15s}.seed i:nth-child(3){animation-delay:.3s}.seed i:nth-child(4){animation-delay:.45s}
+  @keyframes blink{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.3)}}
+
+  section{padding:40px 0; border-bottom:1px solid var(--line)}
+  h2{font-size:1.55rem; margin:0 0 4px}
+  .lead{color:var(--muted); margin-top:0}
+
+  /* role cards */
+  .roles{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-top:18px}
+  .role{background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--a); border-radius:12px; padding:16px 18px}
+  .role.attn{border-left-color:var(--b)} .role.out{border-left-color:var(--c)}
+  .role.inp{border-left-color:var(--p)} .role.up{border-left-color:var(--a2)}
+  .role h3{margin:.1em 0 .3em; font-size:1.02rem; display:flex; align-items:center; gap:9px}
+  .role .tag{font-size:.62rem; font-family:ui-monospace,Consolas,monospace; color:var(--soft);
+             border:1px solid var(--line); border-radius:5px; padding:1px 7px}
+  .role p{margin:.3em 0; color:var(--muted); font-size:.9rem}
+  .role .shape{font-family:ui-monospace,Consolas,monospace; font-size:.78rem; color:var(--ink); margin-top:8px}
+
+  /* attention spotlight */
+  .attnbox{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; margin-top:18px;
+           display:grid; grid-template-columns:1.1fr 1fr; gap:24px; align-items:center}
+  @media(max-width:760px){.attnbox{grid-template-columns:1fr}}
+  .grid32{position:relative; width:200px; height:200px; margin:0 auto; border:1px solid var(--line);
+          border-radius:10px; background:
+          linear-gradient(var(--line) 1px,transparent 1px) 0 0/25px 25px,
+          linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/25px 25px, #0a0e14}
+  .qpt,.kpt{position:absolute; width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%)}
+  .qpt{background:#fff; box-shadow:0 0 12px 3px var(--b); left:62%; top:42%; z-index:3}
+  .kpt{background:var(--b); opacity:.55}
+  svg.links{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+  .play svg.links line{stroke-dasharray:4 5; animation:dash 1s linear infinite}
+  @keyframes dash{to{stroke-dashoffset:-18}}
+
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:.88rem}
+  th,td{border:1px solid var(--line); padding:8px 11px; text-align:left}
+  th{background:var(--panel2)} td{color:var(--muted)} td b{color:var(--ink)}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  footer{padding:34px 22px 56px; text-align:center; color:var(--soft); font-size:.88rem}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Generator Architecture — Animated</h1>
+    <p>Watch a noise vector grow into a 128×128 hand sign, layer by layer. Each block shows how the
+       spatial resolution expands while channels shrink — and what every part actually does.</p>
+    <a class="back" href="index.html">← Back to the model walkthrough</a>
+  </div>
+</header>
+
+<!-- ANIMATED PIPELINE -->
+<section><div class="wrap">
+  <div class="controls">
+    <button class="btn" id="playBtn">▶ Play animation</button>
+    <button class="btn alt" id="replayBtn">↻ Replay</button>
+    <span class="hint">resolution: 4 → 8 → 16 → 32 → 64 → 128 &nbsp;·&nbsp; channels: 512 → 1</span>
+  </div>
+
+  <div class="feed">
+    <div class="seed">noise <b>z</b> (128) <span class="dotrow"><i></i><i></i><i></i><i></i></span></div>
+    <div class="seed">class label (one-hot 32) <span class="dotrow"><i></i><i></i><i></i><i></i></span></div>
+  </div>
+
+  <div class="stage play" id="stage">
+    <div class="rail"></div>
+    <div class="pulse"></div>
+    <div class="blocks">
+
+      <div class="blk c-in"  style="animation-delay:.0s">
+        <div class="cube" style="width:30px;height:30px;animation-delay:.0s">z+y</div>
+        <div class="name">Input fusion<br>noise + label</div>
+        <div class="ch">256-d</div>
+      </div>
+
+      <div class="blk c-dense" style="animation-delay:.5s">
+        <div class="cube" style="width:34px;height:34px;animation-delay:.5s">4²<span class="res">512 ch</span></div>
+        <div class="name">Dense + Reshape</div>
+        <div class="ch">4×4×512</div>
+      </div>
+
+      <div class="blk c-up" style="animation-delay:1.0s">
+        <div class="cube" style="width:42px;height:42px;animation-delay:1.0s">8²<span class="res">256 ch</span></div>
+        <div class="name">ConvT ↑2</div>
+        <div class="ch">8×8×256</div>
+      </div>
+
+      <div class="blk c-up" style="animation-delay:1.5s">
+        <div class="cube" style="width:54px;height:54px;animation-delay:1.5s">16²<span class="res">128 ch</span></div>
+        <div class="name">ConvT ↑2</div>
+        <div class="ch">16×16×128</div>
+      </div>
+
+      <div class="blk c-up" style="animation-delay:2.0s">
+        <div class="cube" style="width:70px;height:70px;animation-delay:2.0s">32²<span class="res">128 ch</span></div>
+        <div class="name">ConvT ↑2</div>
+        <div class="ch">32×32×128</div>
+      </div>
+
+      <div class="blk c-attn" style="animation-delay:2.5s">
+        <div class="cube" style="width:70px;height:70px;animation-delay:2.5s">⟜<span class="res">attention</span></div>
+        <div class="name">Self-Attention<br>@ 32×32</div>
+        <div class="ch">global structure</div>
+      </div>
+
+      <div class="blk c-up" style="animation-delay:3.0s">
+        <div class="cube" style="width:92px;height:92px;animation-delay:3.0s">64²<span class="res">64 ch</span></div>
+        <div class="name">ConvT ↑2</div>
+        <div class="ch">64×64×64</div>
+      </div>
+
+      <div class="blk c-up" style="animation-delay:3.5s">
+        <div class="cube" style="width:118px;height:118px;animation-delay:3.5s">128²<span class="res">32 ch</span></div>
+        <div class="name">ConvT ↑2</div>
+        <div class="ch">128×128×32</div>
+      </div>
+
+      <div class="blk c-out" style="animation-delay:4.0s">
+        <div class="cube" style="width:118px;height:118px;animation-delay:4.0s">🖐<span class="res">tanh</span></div>
+        <div class="name">Conv + tanh<br>final image</div>
+        <div class="ch">128×128×1</div>
+      </div>
+
+    </div>
+  </div>
+  <p class="lead" style="text-align:center">Each cube is a feature map: <b>it gets wider (more pixels)</b> and <b>thinner (fewer channels)</b> as we go — the network trades depth for detail.</p>
+</div></section>
+
+<!-- ROLE OF EACH PART -->
+<section><div class="wrap">
+  <h2>Role of each component</h2>
+  <p class="lead">What every block contributes to building the hand sign.</p>
+
+  <div class="roles">
+    <div class="role inp">
+      <h3>① Input fusion <span class="tag">Dense + Concat</span></h3>
+      <p>The random noise <b>z</b> decides <i>which variation</i> of the sign to draw; the class label says
+         <i>which letter</i>. The label is embedded to 128-d and concatenated with z.</p>
+      <p class="shape">noise(128) + label_emb(128) → 256</p>
+    </div>
+
+    <div class="role">
+      <h3>② Dense + Reshape <span class="tag">Dense→4×4×512</span></h3>
+      <p>Projects the 256-d vector into a tiny but very deep 4×4 image with 512 channels — the "seed canvas"
+         that holds compressed global layout.</p>
+      <p class="shape">256 → 4×4×512 (BatchNorm + ReLU)</p>
+    </div>
+
+    <div class="role up">
+      <h3>③–⑤ Transposed convs <span class="tag">ConvT stride 2</span></h3>
+      <p>Each step <b>doubles the resolution</b> (4→8→16→32) and halves the channel count. This is where coarse
+         blobs gradually become fingers and palm edges. BatchNorm + ReLU keep training stable.</p>
+      <p class="shape">8×8×256 → 16×16×128 → 32×32×128</p>
+    </div>
+
+    <div class="role attn">
+      <h3>⑥ Self-Attention <span class="tag">SAGAN @32²</span></h3>
+      <p>Convolutions only see local neighborhoods. Attention lets every pixel look at <b>all other pixels</b>,
+         so the thumb and pinky stay consistent with the wrist. Starts disabled (γ=0) and switches on as it helps.</p>
+      <p class="shape">32×32×128 → 32×32×128 (+ γ·attention)</p>
+    </div>
+
+    <div class="role up">
+      <h3>⑦–⑧ Upsample to full size <span class="tag">ConvT stride 2</span></h3>
+      <p>Two more doublings (32→64→128) add fine texture and sharp edges at full resolution, dropping to just
+         32 channels.</p>
+      <p class="shape">64×64×64 → 128×128×32</p>
+    </div>
+
+    <div class="role out">
+      <h3>⑨ Output head <span class="tag">Conv 3×3 + tanh</span></h3>
+      <p>A final convolution collapses 32 channels to <b>1 grayscale channel</b>; <b>tanh</b> squashes pixels to
+         [-1, 1] — the same range as the real training images. (Kept in float32 for stability.)</p>
+      <p class="shape">128×128×32 → 128×128×1</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ATTENTION SPOTLIGHT -->
+<section><div class="wrap">
+  <h2>Spotlight: how Self-Attention works</h2>
+  <p class="lead">The one non-obvious block. The bright point is a <b>query</b> pixel; lines show it gathering
+     information from <b>key</b> pixels across the whole 32×32 map.</p>
+  <div class="attnbox">
+    <div class="grid32">
+      <svg class="links" viewBox="0 0 200 200" preserveAspectRatio="none">
+        <line x1="124" y1="84" x2="30"  y2="40"  stroke="#3dba8c" stroke-width="1.4"/>
+        <line x1="124" y1="84" x2="170" y2="60"  stroke="#3dba8c" stroke-width="1.4"/>
+        <line x1="124" y1="84" x2="50"  y2="150" stroke="#3dba8c" stroke-width="1.4"/>
+        <line x1="124" y1="84" x2="150" y2="165" stroke="#3dba8c" stroke-width="1.4"/>
+        <line x1="124" y1="84" x2="95"  y2="20"  stroke="#3dba8c" stroke-width="1.4"/>
+        <line x1="124" y1="84" x2="25"  y2="100" stroke="#3dba8c" stroke-width="1.4"/>
+      </svg>
+      <div class="kpt" style="left:15%;top:20%"></div>
+      <div class="kpt" style="left:85%;top:30%"></div>
+      <div class="kpt" style="left:25%;top:75%"></div>
+      <div class="kpt" style="left:75%;top:82%"></div>
+      <div class="kpt" style="left:47%;top:10%"></div>
+      <div class="kpt" style="left:12%;top:50%"></div>
+      <div class="qpt"></div>
+    </div>
+    <div>
+      <p style="color:var(--muted)">For each pixel the layer computes three projections:</p>
+      <table>
+        <tr><th>Tensor</th><th>Meaning</th></tr>
+        <tr><td class="mono">Q (query)</td><td>"what am I looking for?"</td></tr>
+        <tr><td class="mono">K (key)</td><td>"what do I offer?"</td></tr>
+        <tr><td class="mono">V (value)</td><td>"the content I pass on"</td></tr>
+      </table>
+      <p style="color:var(--muted)">Attention = <span class="mono">softmax(Q·Kᵀ)·V</span>, then the result is added back
+         scaled by a learned <span class="mono">γ</span> (initialised to 0). So early on the block is a no-op and
+         only contributes once it reduces the loss — a safe way to add global reasoning.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- SHAPE TABLE -->
+<section><div class="wrap">
+  <h2>Shape tracker</h2>
+  <table>
+    <tr><th>#</th><th>Layer</th><th>Output shape</th><th>What changes</th></tr>
+    <tr><td>1</td><td>Input fusion</td><td class="mono">(256,)</td><td><b>noise + label</b> joined</td></tr>
+    <tr><td>2</td><td>Dense + Reshape</td><td class="mono">4×4×512</td><td>vector → deep mini-image</td></tr>
+    <tr><td>3</td><td>Conv2DTranspose</td><td class="mono">8×8×256</td><td>×2 size, ÷2 channels</td></tr>
+    <tr><td>4</td><td>Conv2DTranspose</td><td class="mono">16×16×128</td><td>×2 size</td></tr>
+    <tr><td>5</td><td>Conv2DTranspose</td><td class="mono">32×32×128</td><td>×2 size</td></tr>
+    <tr><td>6</td><td>Self-Attention</td><td class="mono">32×32×128</td><td>global consistency (size kept)</td></tr>
+    <tr><td>7</td><td>Conv2DTranspose</td><td class="mono">64×64×64</td><td>×2 size</td></tr>
+    <tr><td>8</td><td>Conv2DTranspose</td><td class="mono">128×128×32</td><td>×2 size → full resolution</td></tr>
+    <tr><td>9</td><td>Conv + tanh</td><td class="mono">128×128×1</td><td>→ single grayscale image</td></tr>
+  </table>
+  <p class="lead">Source: <span class="mono">src/models.py → build_generator()</span></p>
+</div></section>
+
+<footer><div class="wrap">
+  Generator architecture · ArASL cGAN · shared by Model A &amp; Model B ·
+  <a href="index.html">model walkthrough</a>
+</div></footer>
+
+<script>
+  // Play / pause / replay by toggling the .play class (restarts CSS animations)
+  const stage = document.getElementById('stage');
+  const playBtn = document.getElementById('playBtn');
+  const replayBtn = document.getElementById('replayBtn');
+
+  function setPlaying(on){
+    stage.classList.toggle('play', on);
+    document.body.classList.toggle('paused', !on);
+    playBtn.textContent = on ? '⏸ Pause animation' : '▶ Play animation';
+  }
+  playBtn.addEventListener('click', () => setPlaying(!stage.classList.contains('play')));
+  replayBtn.addEventListener('click', () => {
+    stage.classList.remove('play');
+    // force reflow so the animation restarts from the beginning
+    void stage.offsetWidth;
+    setPlaying(true);
+  });
+  // pause-aware: when paused, freeze all running animations inside the stage
+  const style = document.createElement('style');
+  style.textContent = 'body.paused #stage *{animation-play-state:paused !important}';
+  document.head.appendChild(style);
+</script>
+</body>
+</html>
