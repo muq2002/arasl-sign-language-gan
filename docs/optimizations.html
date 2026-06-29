@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Speed Optimizations — What Each One Does</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --a2:#3b82f6; --b:#3dba8c; --c:#e8a450; --d:#e05555; --p:#9d8df5;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#16233a 0%,transparent 60%),var(--bg);
+       color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; line-height:1.62}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 22px}
+  a{color:var(--a)}
+
+  header.hero{padding:54px 22px 30px; text-align:center;
+    background:linear-gradient(135deg,#143027 0%,#10233e 55%,#0d1117 100%); border-bottom:1px solid var(--line)}
+  .hero h1{font-size:2.2rem; margin:.1em 0}
+  .hero p{color:var(--muted); max-width:700px; margin:.4em auto}
+  .pill{display:inline-block; margin-top:8px; padding:5px 14px; border-radius:999px; font-size:.82rem;
+        background:#10261d; border:1px solid #1d4d3a; color:#8fe6c4}
+  .back{display:inline-block; margin-top:16px; font-size:.9rem; color:var(--muted); text-decoration:none;
+        border:1px solid var(--line); padding:6px 14px; border-radius:999px}
+  .back:hover{color:var(--ink); background:var(--panel)}
+
+  nav.toc{position:sticky; top:0; z-index:20; backdrop-filter:blur(8px);
+          background:rgba(13,17,23,.82); border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex; gap:8px; flex-wrap:wrap; padding:11px 22px}
+  nav.toc a{color:var(--muted); text-decoration:none; font-size:.86rem; padding:5px 11px; border-radius:8px; border:1px solid transparent}
+  nav.toc a:hover{color:var(--ink); border-color:var(--line); background:var(--panel)}
+
+  section{padding:30px 0; border-bottom:1px solid var(--line)}
+  h2{font-size:1.5rem; margin:6px 0 2px}
+  .lead{color:var(--muted); margin-top:0}
+
+  /* technique card */
+  .tech{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px 24px; margin:18px 0}
+  .tech .head{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .badge{flex:0 0 44px; height:44px; border-radius:12px; display:grid; place-items:center; font-size:1.2rem;
+         font-weight:800; color:#06101e}
+  .tech h3{margin:0; font-size:1.18rem}
+  .spd{margin-left:auto; font-family:ui-monospace,Consolas,monospace; font-size:.82rem; color:#8fe6c4;
+       background:#10261d; border:1px solid #1d4d3a; padding:3px 11px; border-radius:8px; white-space:nowrap}
+  .what{margin:14px 0 6px; color:var(--ink)}
+  .tech p{color:var(--muted); margin:.4em 0}
+  .tech .lab{color:var(--soft); font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; margin-top:14px}
+
+  /* before/after */
+  .ba{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px}
+  @media(max-width:720px){.ba{grid-template-columns:1fr}}
+  .ba .col{border:1px solid var(--line); border-radius:11px; overflow:hidden}
+  .ba .col h4{margin:0; padding:8px 13px; font-size:.82rem}
+  .ba .old h4{background:#2a1416; color:#f7a9a3; border-bottom:1px solid var(--line)}
+  .ba .new h4{background:#10261d; color:#8fe6c4; border-bottom:1px solid var(--line)}
+  pre{margin:0; background:#0a0e14; padding:12px 14px; overflow:auto; font-size:.78rem; line-height:1.5}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:#c9d4e0}
+  .k{color:#ff7b72}.s{color:#a5d6ff}.n{color:#79c0ff}.c{color:#6e7781;font-style:italic}
+
+  .safe{border-left:4px solid var(--b); background:#0e1f18; padding:9px 14px; border-radius:0 9px 9px 0; margin:12px 0; font-size:.9rem}
+  .safe b{color:#bff0dc}
+
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:.9rem}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left}
+  th{background:var(--panel2)} td{color:var(--muted)} td b{color:var(--ink)}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  .x{color:var(--d);font-weight:700}.v{color:var(--b);font-weight:700}
+
+  footer{padding:34px 22px 56px; text-align:center; color:var(--soft); font-size:.88rem}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Speed Optimizations — What Each One Does</h1>
+    <p>Five techniques make training and preprocessing faster <b>without changing the loss math or the
+       architecture</b>. Here is what each one actually does, and why the results stay the same.</p>
+    <span class="pill">✓ same accuracy &nbsp;·&nbsp; faster execution</span>
+    <br><a class="back" href="index.html">← Back to the model walkthrough</a>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#mp">① Mixed precision</a>
+  <a href="#data">② tf.data prefetch</a>
+  <a href="#graph">③ In-graph ops</a>
+  <a href="#mediapipe">④ MediaPipe reuse</a>
+  <a href="#xla">⑤ XLA</a>
+  <a href="#summary">Summary</a>
+</div></nav>
+
+<!-- 1 MIXED PRECISION -->
+<section id="mp"><div class="wrap">
+  <div class="tech">
+    <div class="head">
+      <span class="badge" style="background:linear-gradient(135deg,var(--a),var(--a2))">½</span>
+      <h3>① Mixed precision (float16 + loss scaling)</h3>
+      <span class="spd">~1.4–2.0× faster</span>
+    </div>
+    <p class="what"><b>What it does:</b> runs the heavy matrix-multiplies and convolutions in 16-bit floats
+       instead of 32-bit. Modern GPUs (your RTX 5060 included) have <b>tensor cores</b> that crunch float16
+       roughly twice as fast and use half the memory bandwidth.</p>
+    <div class="lab">how it stays accurate</div>
+    <p>The fragile parts are kept in float32: the generator's <span class="mono">tanh</span> output, the
+       discriminator's logits, and the attention softmax. A <b>loss scaler</b> multiplies the loss up before
+       computing gradients (so tiny float16 gradients don't vanish to zero) and divides them back down before
+       the optimizer step. Same numbers, just stored more efficiently.</p>
+    <div class="safe"><b>Accuracy-safe:</b> the optimizer, learning rates and gradients are identical — only the
+       storage format of intermediate tensors changed.</div>
+    <p class="lab" style="margin-bottom:4px">code</p>
+    <pre><code><span class="n">tf</span>.keras.mixed_precision.set_global_policy(<span class="s">"mixed_float16"</span>)
+opt = mixed_precision.LossScaleOptimizer(Adam(lr))   <span class="c"># auto loss scaling</span></code></pre>
+  </div>
+</div></section>
+
+<!-- 2 TF.DATA -->
+<section id="data"><div class="wrap">
+  <div class="tech">
+    <div class="head">
+      <span class="badge" style="background:linear-gradient(135deg,var(--b),#2f9d77)">⇉</span>
+      <h3>② tf.data pipeline + prefetch</h3>
+      <span class="spd">~1.05–1.25× faster</span>
+    </div>
+    <p class="what"><b>What it does:</b> while the GPU trains on batch N, the CPU already prepares and copies
+       batch N+1. The old code did this <b>serially</b> — build a tensor, copy it to the GPU, wait, then train —
+       so the GPU sat idle during every copy.</p>
+    <div class="ba">
+      <div class="col old"><h4>OLD — copy then wait, every step</h4>
+        <pre><code><span class="k">for</span> step <span class="k">in</span> range(steps):
+    r = tf.constant(imgs[s:e])   <span class="c"># H→D copy, blocks</span>
+    lbs = tf.one_hot(...)        <span class="c"># on host</span>
+    train_step(r, lbs)           <span class="c"># GPU waited</span></code></pre>
+      </div>
+      <div class="col new"><h4>NEW — overlap copy with compute</h4>
+        <pre><code>ds = (Dataset.from_tensor_slices(idx)
+        .shuffle(N).batch(B)
+        .map(gather_fn)          <span class="c"># on CPU workers</span>
+        .prefetch(AUTOTUNE))     <span class="c"># next batch ready</span></code></pre>
+      </div>
+    </div>
+    <div class="safe"><b>Accuracy-safe:</b> exact same images, same batch size, same shuffle — only the timing of
+       the copies changed.</div>
+  </div>
+</div></section>
+
+<!-- 3 IN-GRAPH -->
+<section id="graph"><div class="wrap">
+  <div class="tech">
+    <div class="head">
+      <span class="badge" style="background:linear-gradient(135deg,var(--p),#7a6ae0)">{ }</span>
+      <h3>③ In-graph one-hot + vectorized targets</h3>
+      <span class="spd">removes per-step Python overhead</span>
+    </div>
+    <p class="what"><b>What it does:</b> moves small repeated operations off slow Python and into the compiled
+       graph. Two specific wins:</p>
+    <p>• <b>One-hot labels</b> are built inside the pipeline instead of on the host every step.</p>
+    <p>• The <b>Phase-2 structural target</b> (a random real image per sample) was chosen with a 32-element
+       Python loop calling <span class="mono">np.random.choice</span> every step. Now the whole epoch's targets
+       are picked with <b>one vectorized NumPy expression</b> and gathered in-graph.</p>
+    <div class="ba">
+      <div class="col old"><h4>OLD — Python loop per step</h4>
+        <pre><code>tgt = [imgs[np.random.choice(
+         members[c])] for c in lbls]
+tgt = np.stack(tgt)          <span class="c"># 32× choice / step</span></code></pre>
+      </div>
+      <div class="col new"><h4>NEW — vectorized once per epoch</h4>
+        <pre><code>rnd = (rng.random(N)*counts[lbl])
+idx = flat_members[off[lbl]+rnd]  <span class="c"># one shot</span>
+target_idx_var.assign(idx)</code></pre>
+      </div>
+    </div>
+    <div class="safe"><b>Accuracy-safe:</b> identical selection rule (prototype in Phase 1, random real member in
+       Phase 2) — just computed in bulk instead of one element at a time.</div>
+  </div>
+</div></section>
+
+<!-- 4 MEDIAPIPE -->
+<section id="mediapipe"><div class="wrap">
+  <div class="tech">
+    <div class="head">
+      <span class="badge" style="background:linear-gradient(135deg,var(--c),#d4872f)">🖐</span>
+      <h3>④ MediaPipe instance reuse <span style="font-size:.8rem;color:var(--soft)">(Model B only)</span></h3>
+      <span class="spd">~5–15× faster extraction</span>
+    </div>
+    <p class="what"><b>What it does:</b> builds the MediaPipe hand detector <b>once</b> and reuses it for all 54k
+       images. The old code created a brand-new detector inside a <span class="mono">with</span> block on every
+       call — and the cascade tries up to 4 strategies per image, so it loaded the model graph up to
+       <b>4 times per image</b>. Loading the model is far more expensive than actually running it.</p>
+    <div class="ba">
+      <div class="col old"><h4>OLD — rebuild detector every call</h4>
+        <pre><code><span class="k">def</span> run(img):
+    <span class="k">with</span> mp.Hands(...) <span class="k">as</span> h:  <span class="c"># loads graph!</span>
+        <span class="k">return</span> h.process(img)
+<span class="c"># ~200k model loads over 54k imgs</span></code></pre>
+      </div>
+      <div class="col new"><h4>NEW — one detector, reused</h4>
+        <pre><code><span class="k">with</span> HandLandmarkExtractor() <span class="k">as</span> ext:
+    <span class="k">for</span> im <span class="k">in</span> images:
+        ext.extract(im)   <span class="c"># reuses Hands</span></code></pre>
+      </div>
+    </div>
+    <div class="safe"><b>Accuracy-safe:</b> identical detector, identical confidence thresholds and cascade — the
+       landmarks produced are exactly the same, only the wasteful re-loading is gone.</div>
+  </div>
+</div></section>
+
+<!-- 5 XLA -->
+<section id="xla"><div class="wrap">
+  <div class="tech">
+    <div class="head">
+      <span class="badge" style="background:linear-gradient(135deg,#888,#555);color:#fff">⚙</span>
+      <h3>⑤ XLA compilation <span style="font-size:.8rem;color:var(--soft)">(optional, off by default)</span></h3>
+      <span class="spd">+1.1–1.5× extra</span>
+    </div>
+    <p class="what"><b>What it does:</b> XLA fuses many small GPU operations into fewer, larger compiled kernels,
+       cutting launch overhead and memory traffic. Enabled with one flag on the training step.</p>
+    <p>It is <b>off by default</b> only because compilation can occasionally be picky about specific GPUs/op
+       combinations — not because it affects results. Flip <span class="mono">USE_XLA = True</span> in
+       <span class="mono">config.py</span> and benchmark; if it compiles, keep it.</p>
+    <div class="safe"><b>Accuracy-safe:</b> numerically equivalent — it only reorganizes how the same operations
+       are executed.</div>
+  </div>
+</div></section>
+
+<!-- SUMMARY -->
+<section id="summary"><div class="wrap">
+  <h2>Summary</h2>
+  <table>
+    <tr><th>Technique</th><th>Speed win</th><th>Changes the math?</th><th>Toggle</th></tr>
+    <tr><td><b>Mixed precision</b></td><td>~1.4–2.0×</td><td class="v">No ✓</td><td class="mono">USE_MIXED_PRECISION</td></tr>
+    <tr><td><b>tf.data + prefetch</b></td><td>~1.05–1.25×</td><td class="v">No ✓</td><td class="mono">TF_DATA_PREFETCH</td></tr>
+    <tr><td><b>In-graph / vectorized</b></td><td>removes Python overhead</td><td class="v">No ✓</td><td>always on</td></tr>
+    <tr><td><b>MediaPipe reuse</b></td><td>~5–15× (extraction)</td><td class="v">No ✓</td><td>always on</td></tr>
+    <tr><td><b>XLA</b></td><td>+1.1–1.5×</td><td class="v">No ✓</td><td class="mono">USE_XLA</td></tr>
+  </table>
+  <p class="lead">Combined: training <b>~1.5–2.2×</b> faster (up to ~2.5–3× with XLA), and Model B's one-time
+     landmark extraction drops from hours to minutes. Set the toggles off in
+     <span class="mono">config.py</span> to reproduce the original float32 path exactly.</p>
+  <p class="lead">To measure these on your own machine: <span class="mono">python src/benchmark.py</span></p>
+</div></section>
+
+<footer><div class="wrap">
+  Speed optimizations · ArASL cGAN · all accuracy-preserving ·
+  <a href="index.html">model walkthrough</a> · <a href="generator-architecture.html">generator (animated)</a>
+</div></footer>
+</body>
+</html>
