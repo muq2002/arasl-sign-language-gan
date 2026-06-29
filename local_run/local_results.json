@@ -1,0 +1,28 @@
+{
+  "results": {
+    "A": {
+      "recognition_acc": 0.3333,
+      "diversity": 0.0673
+    },
+    "B": {
+      "recognition_acc": 0.35,
+      "diversity": 0.0812
+    },
+    "C": {
+      "recognition_acc": 0.5333,
+      "diversity": 0.3816
+    }
+  },
+  "real_acc": 0.9599999785423279,
+  "meta": {
+    "classes": [
+      0,
+      1,
+      2
+    ],
+    "img": 64,
+    "per_class": 150,
+    "n_train": 375,
+    "n_eval": 75
+  }
+}

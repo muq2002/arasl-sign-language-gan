@@ -18,3 +18,10 @@ __pycache__/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# local run artifacts
+arasl_venv/
+mp_venv/
+*.parquet
+local_run/*.npy
+local_run/*.log
