@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Problems &amp; How to Solve Them</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --a2:#3b82f6; --b:#3dba8c; --c:#e8a450; --d:#e05555; --p:#9d8df5;
+    --crit:#f85149; --high:#e8a450; --med:#d9b53d; --low:#3dba8c;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#3a1620 0%,transparent 60%),var(--bg);
+       color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; line-height:1.62}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 22px}
+  a{color:var(--a)}
+
+  header.hero{padding:54px 22px 30px; text-align:center;
+    background:linear-gradient(135deg,#3a1c22 0%,#231330 55%,#0d1117 100%); border-bottom:1px solid var(--line)}
+  .hero h1{font-size:2.2rem; margin:.1em 0}
+  .hero p{color:var(--muted); max-width:720px; margin:.4em auto}
+  .back{display:inline-block; margin-top:16px; font-size:.9rem; color:var(--muted); text-decoration:none;
+        border:1px solid var(--line); padding:6px 14px; border-radius:999px}
+  .back:hover{color:var(--ink); background:var(--panel)}
+
+  nav.toc{position:sticky; top:0; z-index:20; backdrop-filter:blur(8px);
+          background:rgba(13,17,23,.82); border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex; gap:8px; flex-wrap:wrap; padding:11px 22px}
+  nav.toc a{color:var(--muted); text-decoration:none; font-size:.84rem; padding:5px 10px; border-radius:8px; border:1px solid transparent}
+  nav.toc a:hover{color:var(--ink); border-color:var(--line); background:var(--panel)}
+
+  /* severity legend */
+  .legend{display:flex; gap:16px; flex-wrap:wrap; justify-content:center; padding:18px 22px 4px; font-size:.84rem; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:7px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  section{padding:24px 0}
+  /* problem card */
+  .prob{background:var(--panel); border:1px solid var(--line); border-radius:16px; margin:18px 0; overflow:hidden}
+  .prob .top{display:flex; align-items:center; gap:13px; padding:16px 22px; border-bottom:1px solid var(--line)}
+  .sev{flex:0 0 auto; font-size:.68rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+       padding:4px 10px; border-radius:7px; color:#0a0e14}
+  .sev.crit{background:var(--crit)} .sev.high{background:var(--high)} .sev.med{background:var(--med)} .sev.low{background:var(--low)}
+  .prob .top h3{margin:0; font-size:1.12rem}
+  .prob .top .where{margin-left:auto; font-family:ui-monospace,Consolas,monospace; font-size:.72rem; color:var(--soft)}
+  .prob .body{padding:18px 22px}
+  .prob .body p{margin:.4em 0; color:var(--muted)}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px}
+  @media(max-width:740px){.grid{grid-template-columns:1fr}}
+  .blk{border:1px solid var(--line); border-radius:11px; padding:13px 15px}
+  .blk.pb{border-left:4px solid var(--crit); background:#21151a}
+  .blk.sol{border-left:4px solid var(--b); background:#0f1e18}
+  .blk h4{margin:0 0 6px; font-size:.78rem; text-transform:uppercase; letter-spacing:.06em}
+  .blk.pb h4{color:#f7a9a3} .blk.sol h4{color:#8fe6c4}
+  .blk p{margin:.3em 0; color:var(--muted); font-size:.92rem}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  pre{margin:8px 0 0; background:#0a0e14; border:1px solid var(--line); border-radius:9px; padding:11px 13px;
+      overflow:auto; font-size:.78rem; line-height:1.5}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:#c9d4e0}
+  .k{color:#ff7b72}.s{color:#a5d6ff}.c{color:#6e7781;font-style:italic}.n{color:#79c0ff}
+  .done{display:inline-block; font-size:.7rem; color:#8fe6c4; background:#10261d; border:1px solid #1d4d3a;
+        border-radius:6px; padding:1px 8px; margin-left:8px}
+
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:.9rem}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left}
+  th{background:var(--panel2)} td{color:var(--muted)} td b{color:var(--ink)}
+  h2{font-size:1.4rem; margin:18px 0 2px}
+  .lead{color:var(--muted)}
+  footer{padding:34px 22px 56px; text-align:center; color:var(--soft); font-size:.88rem}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Problems &amp; How to Solve Them</h1>
+    <p>An honest list of the issues in the two models — ranked by impact — each paired with a concrete fix.
+       Performance bugs are already fixed in <span class="mono">src/</span>; the design issues are the ones
+       that actually limit image quality.</p>
+    <a class="back" href="index.html">← Back to the model walkthrough</a>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#p1">① Regress-to-mean</a>
+  <a href="#p2">② Landmark branch</a>
+  <a href="#p3">③ Detection 27%</a>
+  <a href="#p4">④ "Diversity" term</a>
+  <a href="#p5">⑤ Metrics</a>
+  <a href="#p6">⑥ Performance bugs</a>
+  <a href="#road">Roadmap</a>
+</div></nav>
+
+<div class="legend">
+  <span><i class="sw" style="background:var(--crit)"></i> Critical — limits quality</span>
+  <span><i class="sw" style="background:var(--high)"></i> High</span>
+  <span><i class="sw" style="background:var(--med)"></i> Medium</span>
+  <span><i class="sw" style="background:var(--low)"></i> Fixed / low</span>
+</div>
+
+<section><div class="wrap">
+
+  <!-- P1 -->
+  <div class="prob" id="p1">
+    <div class="top"><span class="sev crit">Critical</span>
+      <h3>① Structural losses regress toward the class average</h3>
+      <span class="where">both models · train step</span></div>
+    <div class="body">
+      <p>The generated image comes from <b>random noise z</b>, but the pixel target is an <b>unrelated</b> real
+         image of the same class. There is no correspondence between <span class="mono">z</span> and the target,
+         so minimizing the L1 distance collapses toward the <b>class mean</b>. With λ<sub>pix</sub>=5 this term
+         dominates the adversarial loss → softer, less diverse hands.</p>
+      <div class="grid">
+        <div class="blk pb"><h4>Problem</h4>
+          <pre><code>fake = G([noise, label])      <span class="c"># random z</span>
+g_pix = mean(|fake - target|) <span class="c"># target = unrelated real</span>
+g_loss = g_adv + <span class="n">5.0</span>*g_pix    <span class="c"># pixel dominates</span></code></pre>
+        </div>
+        <div class="blk sol"><h4>Solution</h4>
+          <p>Replace pixel-L1-to-unaligned-target with <b>feature matching</b> (match the mean of D's
+             intermediate features between the real and fake <i>batch</i>) — the standard collapse-resistant
+             structural loss — or drop the term and lower λ.</p>
+          <pre><code>g_fm = mean(|mean(D_feat(real)) -
+            mean(D_feat(fake))|)
+g_loss = g_adv + λ_fm * g_fm</code></pre>
+        </div>
+      </div>
+      <p><b>Best fix:</b> make structure a <b>per-image condition</b> (next page's pix2pix / diffusion idea) so the
+         target and the input come from the same image — correspondence restored, no regress-to-mean.</p>
+    </div>
+  </div>
+
+  <!-- P2 -->
+  <div class="prob" id="p2">
+    <div class="top"><span class="sev crit">Critical</span>
+      <h3>② The MediaPipe landmark branch is weak (Model B)</h3>
+      <span class="where">Model B · regressor + landmark loss</span></div>
+    <div class="body">
+      <p>Three compounding issues make the landmark signal noisy and biased:</p>
+      <div class="grid">
+        <div class="blk pb"><h4>Problem</h4>
+          <p><b>a.</b> The regressor is trained <b>only on the 27%</b> MediaPipe detected → unreliable on the rest.</p>
+          <p><b>b.</b> The z-coordinate is <b>destroyed</b>: <span class="mono">sigmoid→[0,1]</span> + <span class="mono">clip(0,1)</span>,
+             but MediaPipe depth is often negative → 21 of 63 values zeroed.</p>
+          <p><b>c.</b> Same misalignment as ①: loss compares <b>unaligned</b> fake vs real landmarks.</p>
+        </div>
+        <div class="blk sol"><h4>Solution</h4>
+          <p><b>a.</b> Use landmarks as a <b>conditioning input</b>, supervising only the detectable subset, not a
+             loss over everything.</p>
+          <p><b>b.</b> Drop z (use 42 = 21×x,y) <i>or</i> normalize z separately instead of clipping.</p>
+          <pre><code>lm = lm.reshape(21,3)[:, :2]  <span class="c"># keep x,y only</span>
+lm = lm.flatten()             <span class="c"># 42 dims, no z clip</span></code></pre>
+          <p><b>c.</b> Pair landmarks with their own image (condition), not a random one.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P3 -->
+  <div class="prob" id="p3">
+    <div class="top"><span class="sev high">High</span>
+      <h3>③ Only ~27% of hands are detected</h3>
+      <span class="where">Model B · MediaPipe extraction</span></div>
+    <div class="body">
+      <p>MediaPipe is trained on natural RGB hands in a scene; ArASL is tightly-cropped grayscale. The
+         colorization cascade helps but the ceiling is low. This is a <b>data mismatch</b>, not a tuning bug.</p>
+      <div class="grid">
+        <div class="blk pb"><h4>Problem</h4>
+          <p>73% of images produce zero landmarks → most of the dataset gives no structural signal, and the
+             subset that works is biased toward "easy" poses.</p>
+        </div>
+        <div class="blk sol"><h4>Solution</h4>
+          <p><b>Best:</b> skip MediaPipe and use a structure map you can compute for <b>100%</b> of images —
+             an <b>edge / silhouette / distance-transform</b> from the grayscale hand. Always available, encodes
+             sign shape directly.</p>
+          <pre><code>edge = cv2.Canny(gray, 60, 160)   <span class="c"># 100% coverage</span></code></pre>
+          <p><b>Alternative:</b> newer MediaPipe Tasks <span class="mono">HandLandmarker</span>, or accept 27% and
+             only condition on that subset.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P4 -->
+  <div class="prob" id="p4">
+    <div class="top"><span class="sev med">Medium</span>
+      <h3>④ The "diversity penalty" does not measure diversity</h3>
+      <span class="where">Model B · train step</span></div>
+    <div class="body">
+      <div class="grid">
+        <div class="blk pb"><h4>Problem</h4>
+          <p>It computes variance <b>within a single image</b> (= contrast), not variance <b>across the batch</b>,
+             so it does nothing to prevent mode collapse and just rewards high contrast.</p>
+          <pre><code>div = -0.05*var(flat, <span class="n">axis=1</span>)  <span class="c"># within-image</span></code></pre>
+        </div>
+        <div class="blk sol"><h4>Solution</h4>
+          <p>Measure spread <b>between samples</b> of the same label, or use a proper mode-seeking term
+             (maximize image distance when z differs).</p>
+          <pre><code>div = -λ * mean(|G(z1)-G(z2)|)
+            / (|z1-z2|)       <span class="c"># mode-seeking</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P5 -->
+  <div class="prob" id="p5">
+    <div class="top"><span class="sev med">Medium</span>
+      <h3>⑤ Some evaluation metrics don't measure what they claim</h3>
+      <span class="where">both models · eval suite</span></div>
+    <div class="body">
+      <div class="grid">
+        <div class="blk pb"><h4>Problem</h4>
+          <p><b>SSIM / LPIPS</b> are <i>paired</i> metrics, used here between a random fake and an <b>arbitrary</b>
+             real of the class → near-meaningless (high SSIM would even signal collapse).</p>
+          <p><b>FID</b> at ~2k samples with 2048-dim features is statistically <b>biased</b> (inflated, unstable).</p>
+          <p><b>PKLE</b> relies on the broken 27% detector → computed on a few lucky pairs.</p>
+        </div>
+        <div class="blk sol"><h4>Solution</h4>
+          <p>Use <b>distributional</b> metrics: keep FID but with more samples (or use <b>KID</b>, less biased at
+             small N). Drop per-image SSIM/LPIPS-to-arbitrary-real.</p>
+          <p>Add the most meaningful metric for signs: <b>downstream recognition</b> — train a classifier on
+             real, test on generated (and vice-versa).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P6 -->
+  <div class="prob" id="p6">
+    <div class="top"><span class="sev low">Fixed</span>
+      <h3>⑥ Performance bugs <span class="done">already fixed in src/</span></h3>
+      <span class="where">both models</span></div>
+    <div class="body">
+      <table>
+        <tr><th>Problem</th><th>Solution applied</th></tr>
+        <tr><td><b>MediaPipe rebuilt every call</b> (~4× per image, ~200k loads)</td>
+            <td>Reuse one <span class="mono">Hands</span> instance — <span class="mono">mediapipe_utils.py</span></td></tr>
+        <tr><td><b>Per-step <span class="mono">tf.constant</span> H→D copies</b> block the GPU</td>
+            <td><span class="mono">tf.data</span> + prefetch overlaps copy with compute</td></tr>
+        <tr><td><b>Phase-2 target Python loop</b> (32× <span class="mono">np.random.choice</span>/step)</td>
+            <td>Vectorized once per epoch + in-graph gather</td></tr>
+        <tr><td><b>float32 only</b> — leaves tensor cores idle</td>
+            <td>Mixed precision + loss scaling (accuracy-safe)</td></tr>
+      </table>
+      <p class="lead">See the <a href="optimizations.html">Optimizations page</a> for details. These change speed
+         only — not the results.</p>
+    </div>
+  </div>
+
+</div></section>
+
+<!-- ROADMAP -->
+<section id="road"><div class="wrap">
+  <h2>Fix-it roadmap (by impact)</h2>
+  <table>
+    <tr><th>#</th><th>Action</th><th>Effort</th><th>Payoff</th></tr>
+    <tr><td>1</td><td>Move structure to a <b>per-image condition</b> (edge/landmark → pix2pix / diffusion)</td><td>High</td><td><b>Highest</b> — fixes ①②③ at once</td></tr>
+    <tr><td>2</td><td>Swap pixel-L1 for <b>feature matching</b> in the cGAN baseline</td><td>Low</td><td>High — removes regress-to-mean</td></tr>
+    <tr><td>3</td><td>Add <b>downstream recognition</b> metric; use KID</td><td>Low</td><td>Medium — trustworthy evaluation</td></tr>
+    <tr><td>4</td><td>If keeping landmarks: drop z, supervise detectable subset only</td><td>Low</td><td>Medium</td></tr>
+    <tr><td>5</td><td>Fix the diversity term (cross-batch / mode-seeking)</td><td>Low</td><td>Low–Medium</td></tr>
+  </table>
+  <p class="lead">Honest bottom line: the MediaPipe-as-<i>loss</i> path can't be rescued by tuning. Pivot the
+     landmark idea into a <b>conditioning</b> role — that single change resolves the three critical problems.</p>
+</div></section>
+
+<footer><div class="wrap">
+  Problems &amp; solutions · ArASL cGAN ·
+  <a href="index.html">walkthrough</a> ·
+  <a href="generator-architecture.html">generator</a> ·
+  <a href="optimizations.html">optimizations</a>
+</div></footer>
+</body>
+</html>
