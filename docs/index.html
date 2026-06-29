@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ArASL cGAN — How Model A & Model B Work</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --a2:#3b82f6; --b:#3dba8c; --c:#e8a450; --d:#e05555; --p:#9d8df5;
+    --good:#2ea043; --warn:#d29922; --bad:#f85149;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:radial-gradient(1200px 600px at 80% -10%,#16233a 0%,transparent 60%),var(--bg);
+    color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  a{color:var(--a)}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 22px}
+
+  /* Header */
+  header.hero{
+    padding:64px 22px 52px; text-align:center;
+    background:linear-gradient(135deg,#1b2a4a 0%,#10233e 45%,#0d1117 100%);
+    border-bottom:1px solid var(--line);
+  }
+  .hero h1{font-size:2.5rem; margin:.2em 0 .15em; letter-spacing:.3px}
+  .hero p{color:var(--muted); max-width:720px; margin:.3em auto; font-size:1.08rem}
+  .tagrow{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:22px}
+  .tag{background:#0d1b2e; border:1px solid var(--line); color:var(--muted);
+       padding:6px 14px; border-radius:999px; font-size:.85rem}
+
+  /* Nav */
+  nav.toc{
+    position:sticky; top:0; z-index:20; backdrop-filter:blur(8px);
+    background:rgba(13,17,23,.82); border-bottom:1px solid var(--line);
+  }
+  nav.toc .wrap{display:flex; gap:8px; flex-wrap:wrap; padding:12px 22px}
+  nav.toc a{color:var(--muted); text-decoration:none; font-size:.9rem;
+            padding:5px 12px; border-radius:8px; border:1px solid transparent}
+  nav.toc a:hover{color:var(--ink); border-color:var(--line); background:var(--panel)}
+
+  section{padding:46px 0; border-bottom:1px solid var(--line)}
+  h2{font-size:1.7rem; margin:0 0 6px; display:flex; align-items:center; gap:12px}
+  h2 .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+  h3{font-size:1.18rem; margin:26px 0 8px; color:var(--ink)}
+  .lead{color:var(--muted); margin-top:0}
+
+  /* Cards & grid */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+  @media(max-width:780px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px 22px}
+  .card.A{border-top:3px solid var(--a)}
+  .card.B{border-top:3px solid var(--b)}
+
+  /* Steps */
+  .step{display:flex; gap:16px; padding:14px 0; border-bottom:1px dashed var(--line)}
+  .step:last-child{border-bottom:0}
+  .num{flex:0 0 36px; height:36px; border-radius:10px; display:grid; place-items:center;
+       font-weight:700; color:#06101e; background:linear-gradient(135deg,var(--a),var(--a2))}
+  .B .num{background:linear-gradient(135deg,var(--b),#2f9d77)}
+  .step .body{flex:1}
+  .step h4{margin:.1em 0 .25em; font-size:1.02rem}
+  .step p{margin:.2em 0; color:var(--muted); font-size:.95rem}
+  .chip{display:inline-block; font-size:.74rem; color:var(--soft); background:var(--panel2);
+        border:1px solid var(--line); border-radius:6px; padding:1px 8px; margin:2px 4px 0 0; font-family:ui-monospace,Consolas,monospace}
+
+  /* Flow */
+  .flow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:18px 0 6px}
+  .node{background:var(--panel2); border:1px solid var(--line); border-radius:10px;
+        padding:9px 13px; font-size:.86rem; font-family:ui-monospace,Consolas,monospace; color:var(--ink)}
+  .node.hl{border-color:var(--b); color:#bff0dc}
+  .node.gen{border-color:var(--a)}
+  .node.dis{border-color:var(--d)}
+  .arrow{color:var(--soft)}
+
+  /* code */
+  pre{background:#0a0e14; border:1px solid var(--line); border-radius:12px; padding:15px 17px;
+      overflow:auto; font-size:.83rem; line-height:1.55}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+  pre code{color:#c9d4e0}
+  .k{color:#ff7b72}.s{color:#a5d6ff}.n{color:#79c0ff}.c{color:#6e7781;font-style:italic}.f{color:#d2a8ff}
+
+  /* callouts */
+  .note{border-left:4px solid var(--a); background:#0e1a2b; padding:12px 16px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.warn{border-color:var(--warn); background:#241d0e}
+  .note.bad{border-color:var(--bad); background:#2a1416}
+  .note b{color:var(--ink)}
+
+  /* table */
+  table{width:100%; border-collapse:collapse; margin:10px 0; font-size:.92rem}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left}
+  th{background:var(--panel2); color:var(--ink)}
+  td{color:var(--muted)}
+  .ok{color:var(--good); font-weight:600}
+  .no{color:var(--bad); font-weight:600}
+
+  /* loss math */
+  .eq{background:#0a0e14; border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+      font-family:ui-monospace,Consolas,monospace; font-size:.9rem; color:#c9d4e0; overflow:auto}
+  .eq .lab{color:var(--c)}
+
+  footer{padding:40px 22px 60px; text-align:center; color:var(--soft); font-size:.9rem}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; justify-content:center; margin-top:10px; font-size:.85rem; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:7px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Arabic Sign Language Image Generation</h1>
+    <p>A step-by-step walkthrough of two conditional GANs trained on the <b>ArASL&nbsp;54K</b> dataset
+       (128×128 grayscale hand signs, 32 Arabic letter classes).</p>
+    <div class="tagrow">
+      <span class="tag">TensorFlow / Keras</span>
+      <span class="tag">Conditional GAN</span>
+      <span class="tag">Self-Attention (SAGAN)</span>
+      <span class="tag">Spectral Norm</span>
+      <span class="tag">MediaPipe Hands</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#overview">Overview</a>
+    <a href="#shared">Shared Backbone</a>
+    <a href="#modelA">Model A — Steps</a>
+    <a href="#modelB">Model B — Steps</a>
+    <a href="#losses">Loss Functions</a>
+    <a href="#compare">A vs B</a>
+    <a href="#eval">Evaluation</a>
+    <a href="#notes">Honest Notes</a>
+  </div>
+</nav>
+
+<!-- OVERVIEW -->
+<section id="overview"><div class="wrap">
+  <h2><span class="dot" style="background:var(--a)"></span>Overview</h2>
+  <p class="lead">Both models share the same generator/discriminator backbone and training schedule.
+     The only difference is <b>how structure is supervised</b>.</p>
+
+  <div class="grid2">
+    <div class="card A">
+      <h3 style="color:var(--a)">Model A — Pure cGAN</h3>
+      <p style="color:var(--muted)">Adversarial loss + a <b>pixel structural</b> loss that pulls
+      generated images toward real images of the same class. No hand-pose knowledge.</p>
+      <div>
+        <span class="chip">noise z → image</span>
+        <span class="chip">label condition</span>
+        <span class="chip">pixel L1 target</span>
+      </div>
+    </div>
+    <div class="card B">
+      <h3 style="color:var(--b)">Model B — cGAN + MediaPipe</h3>
+      <p style="color:var(--muted)">Everything in Model A <b>plus</b> a hand-landmark signal:
+      MediaPipe extracts 21 joints, a frozen CNN regressor turns that into a differentiable
+      <b>landmark loss</b> guiding hand geometry.</p>
+      <div>
+        <span class="chip">+ MediaPipe 21 joints</span>
+        <span class="chip">+ landmark regressor</span>
+        <span class="chip">+ landmark loss</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="sw" style="background:var(--a)"></i> Generator path</span>
+    <span><i class="sw" style="background:var(--d)"></i> Discriminator path</span>
+    <span><i class="sw" style="background:var(--b)"></i> Landmark path (Model B only)</span>
+    <span><i class="sw" style="background:var(--c)"></i> Loss weighting (λ)</span>
+  </div>
+</div></section>
+
+<!-- SHARED -->
+<section id="shared"><div class="wrap">
+  <h2><span class="dot" style="background:var(--p)"></span>Shared Backbone</h2>
+  <p class="lead">Steps 1–3 are identical in both notebooks.</p>
+
+  <h3>Data pipeline</h3>
+  <div class="flow">
+    <span class="node">54K PNGs (grayscale)</span><span class="arrow">→</span>
+    <span class="node">resize 128×128</span><span class="arrow">→</span>
+    <span class="node">normalize to [-1, 1]</span><span class="arrow">→</span>
+    <span class="node">LabelEncoder → 32 classes</span><span class="arrow">→</span>
+    <span class="node">shuffle (seed 42)</span>
+  </div>
+
+  <h3>Generator (G)</h3>
+  <p style="color:var(--muted)">A class-conditional up-sampler. Noise + label embedding are fused, then
+     transposed-convolutions grow the spatial size 4→8→16→32→64→128. A SAGAN self-attention block at 32×32
+     captures global hand structure.</p>
+  <div class="flow">
+    <span class="node gen">z (128)</span><span class="arrow">+</span>
+    <span class="node gen">label emb (128)</span><span class="arrow">→</span>
+    <span class="node">Dense 4×4×512</span><span class="arrow">→</span>
+    <span class="node">×5 Conv2DTranspose</span><span class="arrow">→</span>
+    <span class="node hl">SelfAttention @32²</span><span class="arrow">→</span>
+    <span class="node gen">tanh → 128×128×1</span>
+  </div>
+
+  <h3>Discriminator (D)</h3>
+  <p style="color:var(--muted)">Spectral-normalized conv stack. The class label is projected to a full
+     128×128 map and concatenated to the image, so D judges <i>"is this a real <b>and</b> correctly-labelled hand?"</i></p>
+  <div class="flow">
+    <span class="node dis">image 128²</span><span class="arrow">+</span>
+    <span class="node dis">label map 128²</span><span class="arrow">→</span>
+    <span class="node">SN Conv 128→64→32→16→8→4</span><span class="arrow">→</span>
+    <span class="node">Flatten → Dense(1)</span><span class="arrow">→</span>
+    <span class="node dis">real / fake logit</span>
+  </div>
+
+  <div class="note">
+    <b>Stability tricks (both models):</b> asymmetric learning rates (G=2e-4, D=1e-4),
+    label smoothing (0.9), spectral norm on D, γ=0 self-attention init, adaptive G:D update ratio,
+    and a two-phase pixel target (class-average → random real member).
+  </div>
+</div></section>
+
+<!-- MODEL A -->
+<section id="modelA"><div class="wrap">
+  <h2><span class="dot" style="background:var(--a)"></span>Model A — Step by Step</h2>
+  <p class="lead">Pure conditional GAN with a pixel structural loss. <span class="chip">notebooks/model_A_cgan_128_no_mediapipe.ipynb</span></p>
+
+  <div class="card A">
+    <div class="step A">
+      <div class="num">1</div><div class="body">
+        <h4>Load &amp; preprocess</h4>
+        <p>Read 54K grayscale signs, resize to 128², scale to [-1,1], encode the 32 class labels, shuffle.</p>
+      </div>
+    </div>
+    <div class="step A">
+      <div class="num">2</div><div class="body">
+        <h4>Build class prototypes</h4>
+        <p>Average all images of each class → a "prototype" used as the early structural target.</p>
+        <span class="chip">class_image_prototypes[c] = mean(images of class c)</span>
+      </div>
+    </div>
+    <div class="step A">
+      <div class="num">3</div><div class="body">
+        <h4>Build G and D</h4>
+        <p>Same backbone described above. ~ tens of millions of params each.</p>
+      </div>
+    </div>
+    <div class="step A">
+      <div class="num">4</div><div class="body">
+        <h4>Train the Discriminator</h4>
+        <p>One D step per batch: push real (smoothed to 0.9) up, push generated down.</p>
+      </div>
+    </div>
+    <div class="step A">
+      <div class="num">5</div><div class="body">
+        <h4>Train the Generator (×2)</h4>
+        <p>Adversarial loss (fool D) <b>plus</b> pixel L1 toward the target image, weighted by λ.</p>
+        <span class="chip">G = g_adv + λ · mean(|fake − target|)</span>
+      </div>
+    </div>
+    <div class="step A">
+      <div class="num">6</div><div class="body">
+        <h4>Two-phase target + λ warm-up</h4>
+        <p>Epochs 1–10: target = class prototype, λ ramps 0.5→5.0. Epoch 11+: target = a random real
+           image of the class.</p>
+      </div>
+    </div>
+    <div class="step A">
+      <div class="num">7</div><div class="body">
+        <h4>Adaptive balance + checkpoint</h4>
+        <p>If G/D ratio drifts high, run extra G updates. Save weights, history, and sample grids every epoch.</p>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- MODEL B -->
+<section id="modelB"><div class="wrap">
+  <h2><span class="dot" style="background:var(--b)"></span>Model B — Step by Step</h2>
+  <p class="lead">Adds a hand-landmark signal on top of Model A. <span class="chip">notebooks/model_B_cgan_128_mediapipe.ipynb</span></p>
+
+  <div class="card B">
+    <div class="step B">
+      <div class="num">1</div><div class="body">
+        <h4>Load &amp; preprocess</h4>
+        <p>Identical to Model A.</p>
+      </div>
+    </div>
+    <div class="step B">
+      <div class="num">2</div><div class="body">
+        <h4>Colorize grayscale for MediaPipe</h4>
+        <p>MediaPipe expects skin-toned RGB. Each gray image is CLAHE-enhanced, padded, upscaled to 256px,
+           and mapped to a synthetic skin tone before detection.</p>
+        <span class="chip">_gray_to_clahe_skintone()</span><span class="chip">+ padding 15%</span>
+      </div>
+    </div>
+    <div class="step B">
+      <div class="num">3</div><div class="body">
+        <h4>Extract 21 hand joints (4-strategy cascade)</h4>
+        <p>Try CLAHE+skin@256 → @320 → CLAHE-only@0.15 → raw fallback. Returns 63 numbers (21 joints × x,y,z)
+           or zeros on failure. Results are cached to disk.</p>
+        <span class="chip">extract_landmarks() → (63,)</span>
+      </div>
+    </div>
+    <div class="step B">
+      <div class="num">4</div><div class="body">
+        <h4>Train a landmark regressor, then FREEZE it</h4>
+        <p>A small CNN learns <code>image → 63 coords</code> from the images MediaPipe succeeded on.
+           Once trained it is frozen and reused as a <b>differentiable</b> stand-in for MediaPipe.</p>
+        <span class="chip">build_landmark_regressor()</span><span class="chip">trainable = False</span>
+      </div>
+    </div>
+    <div class="step B">
+      <div class="num">5</div><div class="body">
+        <h4>Build per-class landmark prototypes</h4>
+        <p>Average the valid landmarks per class (only classes with ≥50 detections are "gated" on).</p>
+      </div>
+    </div>
+    <div class="step B">
+      <div class="num">6</div><div class="body">
+        <h4>Train D — same as Model A</h4>
+        <p>No change to the discriminator.</p>
+      </div>
+    </div>
+    <div class="step B">
+      <div class="num">7</div><div class="body">
+        <h4>Train G with THREE structural signals</h4>
+        <p>Adversarial + pixel L1 + <b>landmark MSE</b>. The frozen regressor scores the fake image and the
+           error flows back into G — so hand <i>geometry</i> guides generation, not just pixels.</p>
+        <span class="chip">G = g_adv + λpix·pixel + λlm·landmark + diversity</span>
+      </div>
+    </div>
+    <div class="step B">
+      <div class="num">8</div><div class="body">
+        <h4>Two separate λ schedules</h4>
+        <p>Pixel λ ramps 0.5→5.0 over epochs 1–10. Landmark λ stays 0 until epoch 15, then ramps to 2.0 —
+           so geometry phases in only after pixels stabilize.</p>
+      </div>
+    </div>
+    <div class="step B">
+      <div class="num">9</div><div class="body">
+        <h4>Checkpoint + sample — same as Model A</h4>
+      </div>
+    </div>
+  </div>
+
+  <h3>Model B landmark loop (the core idea)</h3>
+  <div class="flow">
+    <span class="node gen">G(z,label) → fake</span><span class="arrow">→</span>
+    <span class="node hl">frozen regressor</span><span class="arrow">→</span>
+    <span class="node hl">predicted 63 coords</span><span class="arrow">vs</span>
+    <span class="node">real MediaPipe coords</span><span class="arrow">→</span>
+    <span class="node" style="border-color:var(--c)">landmark MSE → ∂/∂G</span>
+  </div>
+</div></section>
+
+<!-- LOSSES -->
+<section id="losses"><div class="wrap">
+  <h2><span class="dot" style="background:var(--c)"></span>The Loss Functions</h2>
+
+  <h3>Model A — Generator objective</h3>
+  <div class="eq">
+G_total = <span class="lab">g_adv</span> + λ(epoch) · <span class="lab">mean(|fake − pixel_target|)</span>
+  </div>
+
+  <h3>Model B — Generator objective</h3>
+  <div class="eq">
+G_total = <span class="lab">g_adv</span>
+        + λ_pix(epoch) · <span class="lab">mean(|fake − pixel_target|)</span>
+        + λ_lm(epoch)  · <span class="lab">mean( (regressor(fake) − real_landmarks)² · valid_mask )</span>
+        − 0.05 · <span class="lab">variance(fake)</span>   <span style="color:var(--soft)"># "diversity" term</span>
+  </div>
+
+  <table>
+    <tr><th>Term</th><th>Purpose</th><th>A</th><th>B</th></tr>
+    <tr><td>Adversarial (BCE vs D)</td><td>Make images look real for the class</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+    <tr><td>Pixel L1</td><td>Anchor coarse structure to real images</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+    <tr><td>Landmark MSE</td><td>Guide hand-joint geometry</td><td class="no">✕</td><td class="ok">✓</td></tr>
+    <tr><td>Variance term</td><td>Labelled "diversity" (see notes)</td><td class="no">✕</td><td class="ok">✓</td></tr>
+  </table>
+</div></section>
+
+<!-- COMPARE -->
+<section id="compare"><div class="wrap">
+  <h2><span class="dot" style="background:var(--p)"></span>Model A vs Model B at a glance</h2>
+  <table>
+    <tr><th>Aspect</th><th>Model A</th><th>Model B</th></tr>
+    <tr><td>Image size</td><td>128×128</td><td>128×128</td></tr>
+    <tr><td>Backbone (G/D)</td><td>SAGAN cGAN + spectral norm</td><td>Identical</td></tr>
+    <tr><td>Structural supervision</td><td>Pixel L1 only</td><td>Pixel L1 + landmark MSE</td></tr>
+    <tr><td>External dependency</td><td>None</td><td>MediaPipe Hands</td></tr>
+    <tr><td>Extra trained module</td><td>—</td><td>Frozen landmark regressor</td></tr>
+    <tr><td>λ schedules</td><td>1 (pixel)</td><td>2 (pixel + landmark)</td></tr>
+    <tr><td>Evaluation extras</td><td>FID, SSIM, LPIPS, diversity</td><td>+ PKLE (landmark error)</td></tr>
+  </table>
+</div></section>
+
+<!-- EVAL -->
+<section id="eval"><div class="wrap">
+  <h2><span class="dot" style="background:var(--b)"></span>Evaluation Suite</h2>
+  <p class="lead">Both notebooks generate balanced samples per class and score them.</p>
+  <table>
+    <tr><th>Metric</th><th>What it measures</th><th>Better</th></tr>
+    <tr><td>FID</td><td>Distance between real &amp; generated feature distributions</td><td>lower</td></tr>
+    <tr><td>SSIM</td><td>Structural similarity to a real sample</td><td>higher</td></tr>
+    <tr><td>LPIPS</td><td>Perceptual distance (VGG features)</td><td>lower</td></tr>
+    <tr><td>Diversity</td><td>Intra-class L1 spread of generated samples</td><td>higher</td></tr>
+    <tr><td>PKLE <span class="chip">B only</span></td><td>Landmark MSE between real &amp; generated hands</td><td>lower</td></tr>
+  </table>
+</div></section>
+
+<!-- NOTES -->
+<section id="notes"><div class="wrap">
+  <h2><span class="dot" style="background:var(--warn)"></span>Honest Engineering Notes</h2>
+  <p class="lead">Things worth knowing before trusting the results — kept here so the design is transparent.</p>
+
+  <div class="note warn">
+    <b>~27% landmark detection.</b> MediaPipe is trained on natural RGB hands in a scene; ArASL is tightly
+    cropped grayscale. The colorization cascade helps but the ceiling is low. This is a <i>data</i> mismatch,
+    not a tuning bug.
+  </div>
+  <div class="note bad">
+    <b>Structural losses regress toward the class mean.</b> The generated image comes from random noise <code>z</code>,
+    but the pixel/landmark target is an unrelated real image of the same class — there is no correspondence
+    between <code>z</code> and the target. The minimizer is therefore the class average, which competes with
+    sharpness and diversity (with λ_pix=5 the pixel term dominates the adversarial term).
+  </div>
+  <div class="note bad">
+    <b>The landmark branch is weak.</b> The regressor is trained on only the detectable 27%, its z-coordinate is
+    clipped to [0,1] (MediaPipe depth is often negative), and the loss compares unaligned samples — so even at
+    100% detection it would still push toward mean poses.
+  </div>
+  <div class="note warn">
+    <b>Metric caveats.</b> SSIM/LPIPS are paired metrics used here on unpaired generations; FID at ~2k samples
+    with 2048-dim features is statistically biased. A downstream recognition test (train on real, test on
+    generated) would be more meaningful.
+  </div>
+  <div class="note">
+    <b>Recommended direction.</b> Use structure (landmarks <i>or</i> always-available edge/silhouette maps) as a
+    per-image <b>conditioning input</b> rather than a loss against unaligned targets — i.e. pix2pix /
+    landmark-conditioned diffusion. That restores correspondence and removes the regress-to-mean problem.
+  </div>
+</div></section>
+
+<footer>
+  <div class="wrap">
+    ArASL cGAN walkthrough · Model A (no MediaPipe) &amp; Model B (MediaPipe) · 128×128 · 32 classes<br/>
+    Generated as project documentation — see <code>README.md</code> and the notebooks under <code>notebooks/</code>.
+  </div>
+</footer>
+
+</body>
+</html>
