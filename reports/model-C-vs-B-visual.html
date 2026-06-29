@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Why Model C beats Model B — visual explanation</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --b:#e8a450; --c:#3dba8c; --d:#e05555; --p:#9d8df5; --no:#f85149;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#15233a 0%,transparent 60%),var(--bg);
+       color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; line-height:1.62}
+  .wrap{max-width:1020px; margin:0 auto; padding:0 22px}
+  a{color:var(--a)}
+  header.hero{padding:50px 22px 28px; text-align:center;
+    background:linear-gradient(135deg,#143a30 0%,#3a2a14 60%,#0d1117 100%); border-bottom:1px solid var(--line)}
+  .hero h1{font-size:2rem; margin:.1em 0}
+  .hero p{color:var(--muted); max-width:760px; margin:.4em auto}
+  .back{display:inline-block; margin-top:12px; font-size:.9rem; color:var(--muted); text-decoration:none; border:1px solid var(--line); padding:6px 14px; border-radius:999px}
+  .back:hover{color:var(--ink); background:var(--panel)}
+  section{padding:34px 0; border-bottom:1px solid var(--line)}
+  h2{font-size:1.5rem; margin:0 0 4px}
+  .lead{color:var(--muted); margin-top:0}
+  figure{margin:16px 0; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; text-align:center}
+  figure img{width:100%; border-radius:8px}
+  figcaption{color:var(--muted); font-size:.88rem; margin-top:9px}
+  .C{border-left:4px solid var(--c)} .B{border-left:4px solid var(--b)}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:.93rem}
+  th,td{border:1px solid var(--line); padding:10px 13px; text-align:left}
+  th{background:var(--panel2)} td{color:var(--muted)} td b{color:var(--ink)}
+  .win{color:var(--c);font-weight:700}.bad{color:var(--no);font-weight:700}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin:14px 0}
+  .key{border-left:4px solid var(--p); background:#181530}
+  ul{margin:.4em 0 .4em 1.1em} li{margin:.3em 0; color:var(--muted)}
+  .num{display:inline-block; width:24px;height:24px;border-radius:6px;background:#3dba8c;color:#06101e;font-weight:800;text-align:center;line-height:24px;margin-right:8px}
+  .numb{background:var(--b)}
+  footer{padding:30px 22px 50px; text-align:center; color:var(--soft); font-size:.85rem}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <h1>Why Model C beats Model B</h1>
+  <p>A visual, code-generated explanation on the <b>real ArASL2018 images</b>: how Model C turns each hand into a
+     structure map, how Model B's MediaPipe mostly fails on the same hands, and why that gap decides the result.</p>
+  <a class="back" href="index.html">← Back to reports</a>
+</div></header>
+
+<!-- IDEA C -->
+<section><div class="wrap">
+  <h2>Model C — the idea, on real images</h2>
+  <p class="lead">For <b>every</b> image, Model C computes a 3-channel <b>structure map</b> straight from the pixels —
+     <span style="color:var(--c)">Canny edges + silhouette + distance transform</span> — and conditions the
+     generator on it (plus the class label). The map <i>is</i> the hand shape, paired with its own image.</p>
+  <figure class="C">
+    <img src="assets/c_pipeline.png" alt="Model C structure conversions">
+    <figcaption>Real hand → edge → silhouette → distance map, for 6 classes. <b>Works on 100% of images</b> —
+      it's deterministic OpenCV, nothing can "fail to detect".</figcaption>
+  </figure>
+</div></section>
+
+<!-- IDEA B -->
+<section><div class="wrap">
+  <h2>Model B — MediaPipe on the same hands</h2>
+  <p class="lead">Model B's structural signal is 21 MediaPipe landmarks. But MediaPipe was trained on real RGB hands
+     in a scene — on these tightly-cropped grayscale crops it <b>mostly finds no hand at all</b>, even after
+     skin-tone colorization.</p>
+  <figure class="B">
+    <img src="assets/b_mediapipe.png" alt="Model B MediaPipe attempts">
+    <figcaption>Same images, run through the exact Model-B pipeline (skin-tone + upscale). Green = detected (skeleton
+      drawn); red = <span style="color:var(--no)">no hand detected</span>. Only <b>~5.6%</b> succeed here
+      (2.06% on the training set).</figcaption>
+  </figure>
+</div></section>
+
+<!-- COVERAGE -->
+<section><div class="wrap">
+  <h2>The deciding gap: signal coverage</h2>
+  <figure>
+    <img src="assets/coverage.png" alt="coverage comparison" style="max-width:640px">
+    <figcaption>Model C has a usable structural signal for <b>every</b> image; Model B has one for almost none.</figcaption>
+  </figure>
+  <p class="lead">During training, Model B masks out every sample where MediaPipe failed — so its landmark loss is
+     active on only ~2% of the batch and contributes essentially nothing. That's why <b>B ≈ A</b> in our run.</p>
+</div></section>
+
+<!-- WHY -->
+<section><div class="wrap">
+  <h2>Two reasons C wins (not just coverage)</h2>
+  <div class="card key">
+    <p><span class="num">1</span><b>Coverage.</b> 100% vs ~2% — C always has a structural target; B almost never does.</p>
+    <p><span class="num">2</span><b>Correspondence.</b> C's structure map and its target image are the
+       <b>same hand</b> (paired), so the generator learns to render <i>that exact shape</i>. Models A and B compare a
+       randomly-generated image to an <b>unaligned</b> real one → the only solution is the blurry class average
+       (mode collapse). C removes this entirely.</p>
+  </div>
+</div></section>
+
+<!-- OUTPUT -->
+<section><div class="wrap">
+  <h2>The result — generated samples</h2>
+  <p class="lead">5 classes × 6 samples each, from the 5K run.</p>
+  <div class="two">
+    <figure><img src="../local_run/visualizations/assets/samples_real.png" alt="real"><figcaption style="color:var(--p)">Real images (ground truth)</figcaption></figure>
+    <figure class="C"><img src="../local_run/visualizations/assets/samples_C.png" alt="C"><figcaption style="color:var(--c)"><b>Model C</b> — recognizable &amp; varied hand shapes</figcaption></figure>
+    <figure class="B"><img src="../local_run/visualizations/assets/samples_B.png" alt="B"><figcaption style="color:var(--b)"><b>Model B</b> — blurry, near-identical (collapsed)</figcaption></figure>
+    <figure><img src="../local_run/visualizations/assets/samples_A.png" alt="A"><figcaption style="color:var(--a)">Model A — same collapse as B</figcaption></figure>
+  </div>
+  <table>
+    <tr><th>Model</th><th>Structural signal</th><th>Coverage</th><th>Recognition ↑</th><th>Diversity ↑</th></tr>
+    <tr><td><b>C</b></td><td>edge+silhouette+distance (input)</td><td class="win">100%</td><td class="win">0.968</td><td class="win">0.300</td></tr>
+    <tr><td><b>B</b></td><td>MediaPipe landmark (loss)</td><td class="bad">~2%</td><td>0.348</td><td>0.177</td></tr>
+    <tr><td><b>A</b></td><td>none</td><td>—</td><td>0.398</td><td>0.180</td></tr>
+  </table>
+  <p class="lead"><b>Bottom line:</b> Model C wins because it always has a structural signal <i>and</i> that signal is
+     correctly paired with the target image. Model B's MediaPipe signal exists for only ~2% of hands and was never
+     paired — so it collapses to the class average, no better than having no signal at all.</p>
+</div></section>
+
+<footer><div class="wrap">Figures generated by <span style="font-family:ui-monospace,Consolas,monospace">reports/generate_compare_viz.py</span>
+  on the real ArASL2018 images · <a href="index.html">reports</a></div></footer>
+</body>
+</html>
