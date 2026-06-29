@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reports — Literature, Prior Art & Verdict on Model C</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --b:#e8a450; --c:#3dba8c; --d:#e05555; --p:#9d8df5;
+    --yes:#2ea043; --no:#f85149;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#15233a 0%,transparent 60%),var(--bg);
+       color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; line-height:1.62}
+  .wrap{max-width:1020px; margin:0 auto; padding:0 22px}
+  a{color:var(--a)}
+  header.hero{padding:54px 22px 30px; text-align:center;
+    background:linear-gradient(135deg,#1b2a4a 0%,#10233e 50%,#0d1117 100%); border-bottom:1px solid var(--line)}
+  .hero h1{font-size:2.05rem; margin:.1em 0}
+  .hero p{color:var(--muted); max-width:740px; margin:.4em auto}
+  .pill{display:inline-block; margin-top:8px; padding:5px 14px; border-radius:999px; font-size:.8rem;
+        background:#102338; border:1px solid #1d3a55; color:#9ecbf0}
+  nav.toc{position:sticky; top:0; z-index:20; backdrop-filter:blur(8px);
+          background:rgba(13,17,23,.82); border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex; gap:8px; flex-wrap:wrap; padding:11px 22px}
+  nav.toc a{color:var(--muted); text-decoration:none; font-size:.85rem; padding:5px 11px; border-radius:8px; border:1px solid transparent}
+  nav.toc a:hover{color:var(--ink); border-color:var(--line); background:var(--panel)}
+  section{padding:34px 0; border-bottom:1px solid var(--line)}
+  h2{font-size:1.5rem; margin:0 0 4px}
+  .lead{color:var(--muted); margin-top:0}
+  h3{font-size:1.12rem; margin:22px 0 6px}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:.93rem}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left; vertical-align:top}
+  th{background:var(--panel2)} td{color:var(--muted)} td b{color:var(--ink)}
+  .yes{color:var(--yes); font-weight:700}.no{color:var(--no); font-weight:700}
+  .win{color:var(--c); font-weight:700}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin:14px 0}
+  .verdict{border-left:4px solid var(--c); background:#0f2018}
+  .opinion{border-left:4px solid var(--p); background:#181530}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  .tag{display:inline-block; font-size:.72rem; color:var(--soft); background:var(--panel2); border:1px solid var(--line);
+       border-radius:6px; padding:1px 8px; margin:2px 4px 0 0; font-family:ui-monospace,Consolas,monospace}
+  .src{font-size:.85rem; color:var(--muted)}
+  .src a{margin-right:4px}
+  .pro{color:#8fe6c4}.con{color:#f7a9a3}
+  ul{margin:.4em 0 .6em 1.1em}
+  li{margin:.25em 0; color:var(--muted)}
+  footer{padding:30px 22px 56px; text-align:center; color:var(--soft); font-size:.85rem}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <h1>Reports — Prior Art & Verdict on Model C</h1>
+  <p>Did anyone publish Model C's idea (edge/silhouette structure-conditioned generation),
+     what does the literature say, and is it the right direction for Arabic Sign Language image synthesis?</p>
+  <span class="pill">deep web search · local A/B/C evidence · honest opinion</span>
+</div></header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#answer">Direct answer</a>
+  <a href="#evidence">Our evidence</a>
+  <a href="#lit">Literature</a>
+  <a href="#opinion">Opinion on Model C</a>
+  <a href="#sources">Sources</a>
+</div></nav>
+
+<!-- ANSWER -->
+<section id="answer"><div class="wrap">
+  <h2>Did anyone use Model C's idea?</h2>
+  <p class="lead"><b>Model C =</b> condition a generator on a structure map computed from the image (edges + silhouette +
+     distance transform) + class label, and render the hand sign.</p>
+  <table>
+    <tr><th>Layer of the idea</th><th>Published?</th><th>Closest prior work</th></tr>
+    <tr><td>Edge/silhouette → image <b>conditioning</b> (core mechanism)</td><td class="yes">Yes — well established</td>
+        <td>ControlNet-Canny · Edge-GAN · pix2pix (edge→photo)</td></tr>
+    <tr><td>Applied to <b>hands / fingerspelling</b> synthesis</td><td class="yes">Yes — close precedents</td>
+        <td>SignON (segmentation term in GAN loss) · OpenFS (letter-conditioned)</td></tr>
+    <tr><td>Applied to <b>ArASL2018 Arabic alphabet</b> with edge+silhouette+distance condition</td><td class="no">Not found</td>
+        <td>— appears unpublished</td></tr>
+  </table>
+  <div class="card verdict">
+    <b>Verdict:</b> the <b>method is not novel</b> — it's a validated, published technique, even used for
+    fingerspelling. What is <b>not yet published</b> is Model C's <i>specific application</i> to ArASL2018
+    Arabic-letter generation. So you stand on proven ground; the contribution is
+    <b>applying a known-good method to an under-explored dataset</b>, not inventing a new one.
+  </div>
+  <p class="src">Most telling precedent: <b>SignON's fingerspelling work literally adds a hand-segmentation term to its
+     GAN loss</b> to avoid unrealistic hands — nearly the same instinct as Model C, via segmentation instead of edges.</p>
+</div></section>
+
+<!-- EVIDENCE -->
+<section id="evidence"><div class="wrap">
+  <h2>Our own evidence (local A/B/C run)</h2>
+  <p class="lead">Real CPU run · 4,750 images · 10 classes · 64px · 6 epochs · classifier-on-real (GAN-test ref) = 0.984 · chance = 0.10</p>
+  <table>
+    <tr><th>Model</th><th>Recognition (GAN-test) ↑</th><th>Diversity ↑</th><th>Train time</th></tr>
+    <tr><td><b>A</b> — no MediaPipe</td><td>0.398</td><td>0.180</td><td>545 s</td></tr>
+    <tr><td><b>B</b> — MediaPipe landmark loss</td><td>0.348</td><td>0.177</td><td>522 s</td></tr>
+    <tr><td><b>C</b> — structure-conditioned</td><td class="win">0.968</td><td class="win">0.300</td><td>830 s</td></tr>
+  </table>
+  <p class="lead"><b>C ≫ A ≈ B.</b> C's recognizability (0.968) almost matches real data (0.984); B added nothing
+     (MediaPipe detected only <b>2%</b> of hands). This miniature result mirrors the literature consensus.
+     Full charts: <a href="../local_run/visualizations/index.html">local_run/visualizations</a>.</p>
+</div></section>
+
+<!-- LITERATURE -->
+<section id="lit"><div class="wrap">
+  <h2>What the literature says</h2>
+  <h3>Structure/pose conditioning is the consensus correct method</h3>
+  <ul>
+    <li>General: pix2pix, PG2, Soft-Gated Warping-GAN, MM-Hand, <b>ControlNet</b> (edge/pose/seg conditioning).</li>
+    <li>Sign language: <b>SignGAN</b> (skeleton→photo + hand keypoint loss), <b>SignDiff</b> & <b>Stable Signer</b>
+        (ControlNet diffusion), pose-encoding VAE SLP.</li>
+  </ul>
+  <h3>Landmark-as-a-loss (Model B) is auxiliary, never primary</h3>
+  <ul>
+    <li>LandmarkGAN, GP-GAN, FReeNet, talking-face landmark-regressor loss — all pair a landmark loss
+        <i>with</i> landmark conditioning, and use reliable detectors. No precedent for MediaPipe-loss as the
+        sole signal on tiny grayscale crops (2–27% detection).</li>
+  </ul>
+  <h3>ArASL2018 is a recognition benchmark, not a generation one</h3>
+  <ul>
+    <li>~98–99% recognition with transformers/transfer learning; augmentation is mostly traditional.
+        cGAN/diffusion <b>generation</b> on ArASL2018 is an under-explored niche.</li>
+  </ul>
+  <h3>Our metric is standard</h3>
+  <ul>
+    <li>Classifier-on-real → test-on-generated = the published <b>"GAN-test"</b> (Shmelkov et al., 2018).</li>
+  </ul>
+</div></section>
+
+<!-- OPINION -->
+<section id="opinion"><div class="wrap">
+  <h2>My opinion on Model C</h2>
+  <div class="card opinion">
+    <b>Pursue it — it is the right direction</b>, with eyes open about what is and isn't novel.
+  </div>
+  <h3>Why it's the right call</h3>
+  <ul>
+    <li class="pro">✓ <b>Low technical risk</b> — it's a proven method (ControlNet/pix2pix/Edge-GAN), not a gamble.</li>
+    <li class="pro">✓ <b>Fixes the real bug</b> — the structure map and target come from the same image, so it removes the
+        regress-to-mean collapse that sinks A and B.</li>
+    <li class="pro">✓ <b>100% coverage</b> — edges/silhouettes exist for every image; no 2–27% MediaPipe failure.</li>
+    <li class="pro">✓ <b>Won our test decisively</b> and matches the field consensus.</li>
+    <li class="pro">✓ <b>Clear roadmap</b> — start as pix2pix cGAN, graduate to ControlNet-style diffusion.</li>
+  </ul>
+  <h3>Honest caveats / risks</h3>
+  <ul>
+    <li class="con">• <b>Not novel as a method.</b> A reviewer can say "this is pix2pix/ControlNet on a new dataset."
+        Frame the contribution as <i>application + clean A/B/C ablation</i>, not a new technique.</li>
+    <li class="con">• <b>Conditioning "leaks" real structure.</b> At generation you feed a real class structure map, so high
+        recognition is partly expected — you must show it isn't just copying (hold-out structures, novel-pose tests).</li>
+    <li class="con">• <b>Diversity is bounded by the structure pool.</b> For augmentation that's fine; for free novel-pose
+        synthesis you'll later need a structure/pose <i>sampler</i> (or a diffusion prior).</li>
+    <li class="con">• <b>Edge quality varies</b> on noisy grayscale crops — needs a quick QC pass on the maps.</li>
+  </ul>
+  <h3>What I'd do next</h3>
+  <ul>
+    <li>Run C at full scale (32 classes, 128px, GPU) with <b>FID + KID + GAN-test</b> and per-class breakdown.</li>
+    <li>Add a held-out-structure test to prove generalization beyond copying.</li>
+    <li>Then move to a <b>ControlNet-style diffusion</b> version (SignDiff / Stable Signer are the templates).</li>
+    <li>Position the paper as: <i>"structure-conditioned generation for Arabic fingerspelling augmentation —
+        an ablation showing why landmark-loss fails and structure-conditioning succeeds."</i></li>
+  </ul>
+  <p class="lead"><b>One line:</b> Model C is the correct, low-risk, literature-backed direction — drop Models A and B
+     as primary approaches; the work now is execution and honest framing, not invention.</p>
+</div></section>
+
+<!-- SOURCES -->
+<section id="sources"><div class="wrap">
+  <h2>Key sources</h2>
+  <p class="src">
+    <a href="https://ieeexplore.ieee.org/document/9190723/">Edge-GAN (IEEE)</a> ·
+    <a href="https://www.aimodels.fyi/models/huggingFace/sd-controlnet-canny-lllyasviel">ControlNet-Canny</a> ·
+    <a href="https://www.tensorflow.org/tutorials/generative/pix2pix">pix2pix</a> ·
+    <a href="https://signon-project.eu/wp-content/uploads/2022/01/AICS2021_paper_final.pdf">SignON fingerspelling synthetic data</a> ·
+    <a href="https://arxiv.org/pdf/2602.22949">OpenFS</a> ·
+    <a href="https://openaccess.thecvf.com/content/CVPR2022/papers/Saunders_Signing_at_Scale_Learning_to_Co-Articulate_Signs_for_Large-Scale_Photo-Realistic_CVPR_2022_paper.pdf">SignGAN</a> ·
+    <a href="https://arxiv.org/pdf/2308.16082">SignDiff</a> ·
+    <a href="https://arxiv.org/pdf/1705.09368">PG2</a> ·
+    <a href="https://arxiv.org/pdf/2010.01158">MM-Hand</a> ·
+    <a href="https://arxiv.org/pdf/1807.09499">"How good is my GAN?" (GAN-test)</a> ·
+    <a href="https://www.sciencedirect.com/science/article/pii/S2352340919301283">ArASL2018 dataset</a>
+  </p>
+  <p class="src">Full details: <a href="model-C-prior-art.md">model-C-prior-art.md</a> ·
+     <a href="literature-search.md">literature-search.md</a> · <a href="conclusions.md">conclusions.md</a></p>
+</div></section>
+
+<footer><div class="wrap">Reports · ArASL cGAN · search not exhaustive (can't prove absence); method is validated, exact application lightly explored.</div></footer>
+</body>
+</html>
