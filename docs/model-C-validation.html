@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Model C — Steps &amp; How to Validate Before Full Training</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --a2:#3b82f6; --b:#3dba8c; --c:#e8a450; --d:#e05555; --p:#9d8df5;
+    --go:#2ea043; --stop:#f85149;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#10302a 0%,transparent 60%),var(--bg);
+       color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; line-height:1.62}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 22px}
+  a{color:var(--a)}
+
+  header.hero{padding:54px 22px 30px; text-align:center;
+    background:linear-gradient(135deg,#143a30 0%,#102a3e 55%,#0d1117 100%); border-bottom:1px solid var(--line)}
+  .hero h1{font-size:2.15rem; margin:.1em 0}
+  .hero p{color:var(--muted); max-width:740px; margin:.4em auto}
+  .pill{display:inline-block; margin-top:8px; padding:5px 14px; border-radius:999px; font-size:.82rem;
+        background:#10261d; border:1px solid #1d4d3a; color:#8fe6c4}
+  .back{display:inline-block; margin-top:14px; font-size:.9rem; color:var(--muted); text-decoration:none;
+        border:1px solid var(--line); padding:6px 14px; border-radius:999px}
+  .back:hover{color:var(--ink); background:var(--panel)}
+
+  nav.toc{position:sticky; top:0; z-index:20; backdrop-filter:blur(8px);
+          background:rgba(13,17,23,.82); border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex; gap:8px; flex-wrap:wrap; padding:11px 22px}
+  nav.toc a{color:var(--muted); text-decoration:none; font-size:.85rem; padding:5px 11px; border-radius:8px; border:1px solid transparent}
+  nav.toc a:hover{color:var(--ink); border-color:var(--line); background:var(--panel)}
+
+  section{padding:34px 0; border-bottom:1px solid var(--line)}
+  h2{font-size:1.55rem; margin:0 0 4px}
+  .lead{color:var(--muted); margin-top:0}
+  h3{font-size:1.12rem; margin:22px 0 6px}
+
+  /* flow */
+  .flow{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:16px 0}
+  .node{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:9px 13px;
+        font-size:.84rem; font-family:ui-monospace,Consolas,monospace}
+  .node.cond{border-color:var(--c); color:#f0cf9d}
+  .node.gen{border-color:var(--a)} .node.out{border-color:var(--b); color:#bff0dc} .node.dis{border-color:var(--d)}
+  .arrow{color:var(--soft)}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin:14px 0}
+
+  /* steps */
+  .step{display:flex; gap:15px; padding:13px 0; border-bottom:1px dashed var(--line)}
+  .step:last-child{border-bottom:0}
+  .num{flex:0 0 34px; height:34px; border-radius:9px; display:grid; place-items:center; font-weight:800; color:#06101e;
+       background:linear-gradient(135deg,var(--b),#2f9d77)}
+  .step h4{margin:.1em 0 .25em; font-size:1.01rem}
+  .step p{margin:.2em 0; color:var(--muted); font-size:.93rem}
+  .chip{display:inline-block; font-size:.72rem; color:var(--soft); background:var(--panel2); border:1px solid var(--line);
+        border-radius:6px; padding:1px 8px; margin:2px 4px 0 0; font-family:ui-monospace,Consolas,monospace}
+
+  /* validation ladder */
+  .rung{background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--b); border-radius:12px;
+        padding:16px 20px; margin:14px 0}
+  .rung .h{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .rung .t{font-weight:700; font-size:1.04rem}
+  .rung .cost{margin-left:auto; font-family:ui-monospace,Consolas,monospace; font-size:.76rem; color:#8fe6c4;
+              background:#10261d; border:1px solid #1d4d3a; border-radius:7px; padding:3px 10px; white-space:nowrap}
+  .rung p{color:var(--muted); margin:.45em 0; font-size:.93rem}
+  .pass{border-left:3px solid var(--go); background:#0f2014; padding:7px 13px; border-radius:0 8px 8px 0; margin-top:9px; font-size:.9rem}
+  .pass b{color:#8fe6c4}
+  .fail{border-left:3px solid var(--stop); background:#22141a; padding:7px 13px; border-radius:0 8px 8px 0; margin-top:7px; font-size:.9rem}
+  .fail b{color:#f7a9a3}
+
+  pre{margin:8px 0 0; background:#0a0e14; border:1px solid var(--line); border-radius:9px; padding:11px 14px; overflow:auto; font-size:.79rem; line-height:1.5}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:#c9d4e0}
+  .k{color:#ff7b72}.s{color:#a5d6ff}.c{color:#6e7781;font-style:italic}.n{color:#79c0ff}.f{color:#d2a8ff}
+
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:.9rem}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left}
+  th{background:var(--panel2)} td{color:var(--muted)} td b{color:var(--ink)}
+  .go{color:var(--go);font-weight:700}.no{color:var(--stop);font-weight:700}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  footer{padding:34px 22px 56px; text-align:center; color:var(--soft); font-size:.88rem}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Model C — Structure-Conditioned Generation</h1>
+    <p>The proposed replacement for the MediaPipe-as-loss design: feed an
+       <b>edge / silhouette map as a per-image condition</b>. This page is mostly about one thing —
+       <b>how to prove the idea works in under an hour, before you commit to a full training run.</b></p>
+    <span class="pill">✓ test cheap → fail fast → only then train full</span>
+    <br><a class="back" href="index.html">← Back to the walkthrough</a>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#idea">The idea</a>
+  <a href="#build">Build steps</a>
+  <a href="#why">Why validate first</a>
+  <a href="#ladder">Validation ladder</a>
+  <a href="#gates">Go / No-Go gates</a>
+  <a href="#checklist">Checklist</a>
+</div></nav>
+
+<!-- IDEA -->
+<section id="idea"><div class="wrap">
+  <h2>The idea in one line</h2>
+  <p class="lead">Instead of <i>scoring</i> generated hands with landmarks (which fails at 27% detection and
+     regresses to the mean), <b>give the model the hand structure as input</b> and ask it to render the photo.
+     The structure map and the target image come from the <b>same</b> image → real correspondence.</p>
+
+  <div class="card">
+    <div class="flow">
+      <span class="node">real image</span><span class="arrow">→</span>
+      <span class="node cond">edge / silhouette map</span><span class="arrow">+</span>
+      <span class="node">class label</span><span class="arrow">→</span>
+      <span class="node gen">Generator</span><span class="arrow">→</span>
+      <span class="node out">rendered hand</span>
+    </div>
+    <p style="color:var(--muted);margin:.2em 0 0">Discriminator sees the <b>pair</b> <span class="mono">(image, condition)</span> — so it enforces "this image matches this structure &amp; label". This is the standard <b>pix2pix</b> setup; the same condition later drives a <b>ControlNet-style diffusion</b> model.</p>
+  </div>
+
+  <p>The condition is computed for <b>100%</b> of images with no model and no failures:</p>
+  <pre><code><span class="k">import</span> cv2, numpy <span class="k">as</span> np
+<span class="k">def</span> <span class="f">structure_map</span>(gray_u8):
+    edge = cv2.Canny(gray_u8, <span class="n">60</span>, <span class="n">160</span>)              <span class="c"># contour of the hand</span>
+    _, sil = cv2.threshold(gray_u8, <span class="n">0</span>, <span class="n">255</span>,
+                           cv2.THRESH_BINARY+cv2.THRESH_OTSU)  <span class="c"># silhouette</span>
+    dist = cv2.distanceTransform(sil, cv2.DIST_L2, <span class="n">3</span>)     <span class="c"># smooth shape cue</span>
+    <span class="k">return</span> np.stack([edge, sil, cv2.normalize(dist,<span class="k">None</span>,<span class="n">0</span>,<span class="n">255</span>,cv2.NORM_MINMAX)], -1)</code></pre>
+</div></section>
+
+<!-- BUILD -->
+<section id="build"><div class="wrap">
+  <h2>Build steps (high level)</h2>
+  <div class="card">
+    <div class="step"><div class="num">1</div><div><h4>Compute conditions</h4>
+      <p>Run <span class="mono">structure_map()</span> over all 54k images → cache as a parallel array (like the landmark cache, but 100% coverage).</p>
+      <span class="chip">edge + silhouette + distance</span></div></div>
+    <div class="step"><div class="num">2</div><div><h4>Reuse the optimized backbone</h4>
+      <p>Keep the SAGAN generator / spectral-norm discriminator from <span class="mono">src/models.py</span>. Change the generator input to accept the condition map; change D to take <span class="mono">(image, condition, label)</span>.</p></div></div>
+    <div class="step"><div class="num">3</div><div><h4>Pair condition ↔ target</h4>
+      <p>The training target for condition <i>C(x)</i> is image <i>x</i> itself. This single change removes the regress-to-mean problem.</p></div></div>
+    <div class="step"><div class="num">4</div><div><h4>Loss = adversarial + paired L1</h4>
+      <p>Now the L1 is <b>aligned</b> (fake vs the exact image the condition came from), so it sharpens instead of blurring.</p>
+      <span class="chip">G = g_adv + λ·|fake − x|</span></div></div>
+    <div class="step"><div class="num">5</div><div><h4>Generate</h4>
+      <p>At test time, pick a structure map from the class pool (or a small pose bank) and render. Later: swap the generator for a diffusion U-Net with the same condition.</p></div></div>
+  </div>
+  <p class="lead">But do <b>not</b> jump to Step 5 across 50 epochs yet — validate first ↓</p>
+</div></section>
+
+<!-- WHY -->
+<section id="why"><div class="wrap">
+  <h2>Why validate before a full run</h2>
+  <p class="lead">A full 50-epoch run is ~1.5–2.5 hours on your RTX 5060. Most idea-killing bugs (wrong conditioning
+     wiring, a condition that carries no information, a model with too little capacity) show up in
+     <b>minutes</b> if you test deliberately. The goal: <b>fail in 10 minutes, not in 2 hours.</b></p>
+</div></section>
+
+<!-- LADDER -->
+<section id="ladder"><div class="wrap">
+  <h2>The validation ladder — cheapest test first</h2>
+  <p class="lead">Climb in order. If a rung fails, stop and fix — don't pay for the next rung.</p>
+
+  <div class="rung">
+    <div class="h"><span class="t">① Eyeball the conditioning maps</span><span class="cost">~2 min · CPU</span></div>
+    <p>Plot 20 random <span class="mono">(image, structure_map)</span> pairs. Can <b>you</b> tell the letter from the
+       map alone? If you can't, the network can't either.</p>
+    <div class="pass"><b>Pass:</b> the hand contour/shape is clearly visible and differs between classes.</div>
+    <div class="fail"><b>Fail:</b> maps are blank/noisy → tune Canny thresholds or use silhouette+distance only.</div>
+  </div>
+
+  <div class="rung">
+    <div class="h"><span class="t">② Condition coverage check</span><span class="cost">~1 min</span></div>
+    <p>Confirm the headline win over MediaPipe: every image yields a non-empty map.</p>
+    <pre><code>cov = np.mean([m.any() <span class="k">for</span> m <span class="k">in</span> maps])
+<span class="k">print</span>(cov)   <span class="c"># expect ~1.00  (vs 0.27 for MediaPipe)</span></code></pre>
+    <div class="pass"><b>Pass:</b> coverage ≈ 100%.</div>
+  </div>
+
+  <div class="rung">
+    <div class="h"><span class="t">② Overfit a single batch</span><span class="cost">~3 min · GPU</span></div>
+    <p>The classic wiring test. Train on <b>one batch of 8–16 images</b> for a few hundred steps with the
+       adversarial term off (pure paired L1). A correct model will <b>memorize</b> them almost perfectly.</p>
+    <pre><code><span class="k">for</span> step <span class="k">in</span> range(<span class="n">300</span>):
+    loss = train_recon_step(fixed_batch)   <span class="c"># L1 only, condition→image</span>
+<span class="c"># plot generated vs real for the fixed batch</span></code></pre>
+    <div class="pass"><b>Pass:</b> outputs converge to the exact training images → loss is wired right, model has capacity, condition is being used.</div>
+    <div class="fail"><b>Fail:</b> stays blurry → bug in conditioning path or target alignment. Fix before anything else.</div>
+  </div>
+
+  <div class="rung">
+    <div class="h"><span class="t">③ The correspondence test (the one the old design failed)</span><span class="cost">~3 min</span></div>
+    <p>Feed a <b>real image's</b> structure map and check the output reproduces <b>that</b> pose, not a class average.</p>
+    <div class="pass"><b>Pass:</b> changing the input map visibly changes the output hand pose → conditioning truly drives generation.</div>
+    <div class="fail"><b>Fail:</b> output ignores the map → the condition isn't connected deeply enough (inject it at multiple layers).</div>
+  </div>
+
+  <div class="rung">
+    <div class="h"><span class="t">④ Tiny-subset run (2–3 classes)</span><span class="cost">~10–15 min · GPU</span></div>
+    <p>Train the <b>full</b> pix2pix loss on ~600 images from 2–3 visually distinct letters for ~5 epochs.
+       This is your first real "does the idea hold" signal.</p>
+    <div class="pass"><b>Pass:</b> samples are recognizable as the right letters and respond to the condition.</div>
+    <div class="fail"><b>Fail:</b> mode collapse / noise → adjust λ, learning rates, or condition injection before scaling.</div>
+  </div>
+
+  <div class="rung">
+    <div class="h"><span class="t">⑤ Cheap quantitative probe</span><span class="cost">~10 min</span></div>
+    <p>Train a tiny classifier on <b>real</b> images of those classes, then test it on your <b>generated</b> ones
+       (the "GAN-test" / downstream-recognition metric). One number that actually means something.</p>
+    <div class="pass"><b>Pass:</b> the classifier labels generated samples well above chance (e.g. &gt;70% on 3 classes) → the structure is being rendered faithfully.</div>
+  </div>
+
+  <p class="lead" style="margin-top:18px">Only after rungs ①–⑤ pass do you launch the full 50-epoch, 32-class run.</p>
+</div></section>
+
+<!-- GATES -->
+<section id="gates"><div class="wrap">
+  <h2>Go / No-Go decision gates</h2>
+  <table>
+    <tr><th>After</th><th>If it passes →</th><th>If it fails →</th></tr>
+    <tr><td>① maps + coverage</td><td class="go">build the conditioned model</td><td class="no">fix the structure extractor (thresholds / channels)</td></tr>
+    <tr><td>② overfit one batch</td><td class="go">go to subset run</td><td class="no">fix conditioning wiring / target pairing</td></tr>
+    <tr><td>③ correspondence</td><td class="go">conditioning works — scale up</td><td class="no">inject condition at more layers (U-Net skips)</td></tr>
+    <tr><td>④ subset run</td><td class="go">tune λ, then full run</td><td class="no">revisit losses / LR before spending 2 h</td></tr>
+    <tr><td>⑤ recognition probe</td><td class="go"><b>commit to full training</b></td><td class="no">structure insufficient → add a channel or rethink</td></tr>
+  </table>
+  <p class="lead">Total cost of the whole ladder: <b>~30–40 minutes</b> vs a ~2-hour full run you'd otherwise risk on an unproven idea.</p>
+</div></section>
+
+<!-- CHECKLIST -->
+<section id="checklist"><div class="wrap">
+  <h2>Pre-full-training checklist</h2>
+  <div class="card">
+    <p>✅ Structure maps are visually informative &amp; cover 100% of images</p>
+    <p>✅ Model can overfit a single batch (loss + conditioning wired correctly)</p>
+    <p>✅ Output changes when the input condition changes (correspondence holds)</p>
+    <p>✅ 2–3 class subset produces recognizable, condition-driven hands</p>
+    <p>✅ A small classifier recognizes generated samples above chance</p>
+    <p>✅ Mixed precision / tf.data reused from <span class="mono">src/</span> (fast from day one)</p>
+  </div>
+  <p class="lead">Tick all six → launch the full run with confidence. Miss one → you just saved yourself a wasted run.</p>
+</div></section>
+
+<footer><div class="wrap">
+  Model C — validate before you train · ArASL cGAN ·
+  <a href="index.html">walkthrough</a> · <a href="problems-and-solutions.html">problems &amp; fixes</a> · <a href="optimizations.html">optimizations</a>
+</div></footer>
+</body>
+</html>
