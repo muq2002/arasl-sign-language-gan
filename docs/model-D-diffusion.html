@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Model D — Structure-Conditioned Diffusion + Classifier-Free Guidance</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
+    --ink:#e6edf3; --muted:#9aa7b4; --soft:#7d8a98;
+    --a:#5ba4e8; --b:#3dba8c; --c:#e8a450; --d:#e05555; --p:#9d8df5;
+    --go:#2ea043; --stop:#f85149;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#1c1733 0%,transparent 60%),var(--bg);
+       color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif; line-height:1.62}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 22px}
+  a{color:var(--a)}
+
+  header.hero{padding:54px 22px 30px; text-align:center;
+    background:linear-gradient(135deg,#241b40 0%,#1a1c3e 55%,#0d1117 100%); border-bottom:1px solid var(--line)}
+  .hero h1{font-size:2.1rem; margin:.1em 0}
+  .hero p{color:var(--muted); max-width:760px; margin:.4em auto}
+  .pill{display:inline-block; margin-top:8px; padding:5px 14px; border-radius:999px; font-size:.82rem;
+        background:#1c1733; border:1px solid #3a2f63; color:#cbbdf5}
+  .back{display:inline-block; margin-top:14px; font-size:.9rem; color:var(--muted); text-decoration:none;
+        border:1px solid var(--line); padding:6px 14px; border-radius:999px}
+  .back:hover{color:var(--ink); background:var(--panel)}
+
+  nav.toc{position:sticky; top:0; z-index:20; backdrop-filter:blur(8px);
+          background:rgba(13,17,23,.82); border-bottom:1px solid var(--line)}
+  nav.toc .wrap{display:flex; gap:8px; flex-wrap:wrap; padding:11px 22px}
+  nav.toc a{color:var(--muted); text-decoration:none; font-size:.85rem; padding:5px 11px; border-radius:8px; border:1px solid transparent}
+  nav.toc a:hover{color:var(--ink); border-color:var(--line); background:var(--panel)}
+
+  section{padding:34px 0; border-bottom:1px solid var(--line)}
+  h2{font-size:1.5rem; margin:0 0 6px}
+  .lead{color:var(--muted); margin-top:0}
+  h3{font-size:1.12rem; margin:22px 0 6px}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin:14px 0}
+  .step{display:flex; gap:15px; padding:13px 0; border-bottom:1px dashed var(--line)}
+  .step:last-child{border-bottom:0}
+  .num{flex:0 0 34px; height:34px; border-radius:9px; display:grid; place-items:center; font-weight:800; color:#0a0820;
+       background:linear-gradient(135deg,var(--p),#7c6ce0)}
+  .step h4{margin:.1em 0 .25em; font-size:1.01rem}
+  .step p{margin:.2em 0; color:var(--muted); font-size:.93rem}
+  .chip{display:inline-block; font-size:.72rem; color:var(--soft); background:var(--panel2); border:1px solid var(--line);
+        border-radius:6px; padding:1px 8px; margin:2px 4px 0 0; font-family:ui-monospace,Consolas,monospace}
+
+  .flow{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:16px 0}
+  .node{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:9px 13px;
+        font-size:.84rem; font-family:ui-monospace,Consolas,monospace}
+  .node.cond{border-color:var(--c); color:#f0cf9d} .node.gen{border-color:var(--p); color:#d9d2ff}
+  .node.out{border-color:var(--b); color:#bff0dc}
+  .arrow{color:var(--soft)}
+
+  .eq{background:#0a0e14; border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+      font-family:ui-monospace,Consolas,monospace; font-size:.88rem; color:#c9d4e0; overflow:auto; white-space:pre}
+  .eq .lab{color:var(--p)}
+  .note{border-left:4px solid var(--p); background:#15122a; padding:12px 16px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.good{border-color:var(--go); background:#0f2014}
+  .note b{color:var(--ink)}
+
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:.9rem}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left}
+  th{background:var(--panel2)} td{color:var(--muted)} td b{color:var(--ink)}
+  .go{color:var(--go);font-weight:700}.no{color:var(--stop);font-weight:700}
+  pre{margin:8px 0 0; background:#0a0e14; border:1px solid var(--line); border-radius:9px; padding:11px 14px; overflow:auto; font-size:.79rem; line-height:1.5}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:#c9d4e0}
+  footer{padding:34px 22px 56px; text-align:center; color:var(--soft); font-size:.88rem}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Model D — Structure-Conditioned Diffusion</h1>
+    <p>A different paradigm from the A/B/C GANs: an <b>iterative denoising diffusion</b> model that keeps
+       Model C's structure conditioning and adds <b>classifier-free guidance</b> — a tunable dial that buys
+       class accuracy. The consensus next step beyond a structure-conditioned cGAN.</p>
+    <span class="pill">diffusion &gt; GAN on class-conditional fidelity · trains stably · CFG = accuracy knob</span>
+    <br><a class="back" href="index.html">← Back to the walkthrough</a>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#idea">The idea</a>
+  <a href="#why">Why it should win</a>
+  <a href="#forward">Forward (noising)</a>
+  <a href="#unet">The U-Net</a>
+  <a href="#cfg">Classifier-free guidance</a>
+  <a href="#sample">Sampling (DDIM)</a>
+  <a href="#fit">How it fits A/B/C</a>
+  <a href="#run">Run it</a>
+</div></nav>
+
+<section id="idea"><div class="wrap">
+  <h2>The idea in one paragraph</h2>
+  <p class="lead">Models A/B/C are GANs — a generator produces an image in a single shot and a discriminator
+     judges it. <b>Model D learns to denoise instead.</b> We take a real image, add Gaussian noise on a
+     schedule, and train a <b>time-conditioned U-Net</b> to predict the noise. The per-image
+     <b>structure map</b> (Canny + silhouette + distance transform — the same signal that made Model C win) is
+     concatenated to the noisy image so the network always knows the exact hand shape to render. To generate,
+     we start from pure noise and run the denoiser backwards over a few <b>DDIM</b> steps.</p>
+  <div class="flow">
+    <span class="node cond">structure map</span><span class="arrow">+</span>
+    <span class="node">noisy x_t</span><span class="arrow">+</span>
+    <span class="node gen">timestep t, class y</span><span class="arrow">→</span>
+    <span class="node gen">U-Net → ε̂</span><span class="arrow">→</span>
+    <span class="node out">DDIM step × N</span><span class="arrow">→</span>
+    <span class="node out">sample</span>
+  </div>
+</div></section>
+
+<section id="why"><div class="wrap">
+  <h2>Why it should be more accurate than Model C</h2>
+  <table>
+    <tr><th>Reason</th><th>What it buys</th></tr>
+    <tr><td><b>Diffusion &gt; GAN</b> on class-conditional fidelity</td><td>Higher-quality, more faithful samples (the literature's repeated finding).</td></tr>
+    <tr><td><b>Stable training</b> — one MSE loss, no adversary</td><td>No G/D balancing, no mode collapse. Especially valuable on small / reduced runs.</td></tr>
+    <tr><td><b>Classifier-free guidance</b></td><td>A principled dial that trades diversity for class adherence — i.e. directly targets GAN-test recognition.</td></tr>
+    <tr><td>Keeps <b>aligned structure conditioning</b></td><td>Inherits exactly what made C beat A/B (no regress-to-mean).</td></tr>
+  </table>
+  <div class="note">This is the direction <a href="../reports/conclusions.md">reports/conclusions.md</a> recommends
+    (“graduate from pix2pix-style cGAN to ControlNet-style diffusion”), and the template behind modern
+    sign-language generators (SignDiff, Sign-IDD).</div>
+  <div class="note" style="border-color:var(--stop); background:#22141a">
+    <b>Reality check (this repo's reduced run):</b> the theory above did <b>not</b> pan out at small scale —
+    D scored <b>0.82</b> vs C's <b>0.95</b> and guidance didn't help (see
+    <a href="#cfg">Classifier-free guidance</a>). Diffusion is almost certainly <b>undertrained</b> here
+    (10 epochs / 30 DDIM steps). The stability claim <i>did</i> hold. More compute is needed to test the
+    accuracy claim fairly.</div>
+</div></section>
+
+<section id="forward"><div class="wrap">
+  <h2>Forward process — add noise on a schedule</h2>
+  <p class="lead">A cosine β-schedule defines how much noise to add at each timestep <code>t</code>. Sampling a
+     random <code>t</code> per image and corrupting it gives the training target: the noise <code>ε</code>.</p>
+  <div class="eq">ᾱ_t = ∏(1 − β_i)            <span style="color:var(--soft)"># cosine schedule, t ∈ [0, 1000)</span>
+x_t = √ᾱ_t · x₀ + √(1 − ᾱ_t) · <span class="lab">ε</span>   <span style="color:var(--soft)"># ε ~ N(0, I) is what the U-Net must predict</span></div>
+</div></section>
+
+<section id="unet"><div class="wrap">
+  <h2>The conditioned U-Net (ControlNet-lite)</h2>
+  <div class="card">
+    <div class="step"><div class="num">1</div><div class="body">
+      <h4>Concatenate the structure map at the input</h4>
+      <p>Input is <code>[x_t (1ch) ‖ structure (3ch)]</code>. The map tells the network the exact silhouette
+         and edges to reconstruct — full ControlNet is overkill at this resolution.</p>
+      <span class="chip">Concatenate([img, cond]) → 4ch</span>
+    </div></div>
+    <div class="step"><div class="num">2</div><div class="body">
+      <h4>Inject timestep + class as a shared embedding</h4>
+      <p>A sinusoidal timestep embedding plus a class <code>Embedding</code> (with one extra <b>null</b> row for
+         CFG) are summed and added at every conv block.</p>
+      <span class="chip">temb(t) + Embedding(y)</span>
+    </div></div>
+    <div class="step"><div class="num">3</div><div class="body">
+      <h4>Encoder–bottleneck–decoder with skip connections</h4>
+      <p>Standard U-Net (GroupNorm + swish). Predicts the noise <code>ε̂</code>; the loss is a plain MSE.</p>
+      <span class="chip">loss = ‖ε̂ − ε‖²</span>
+    </div></div>
+  </div>
+</div></section>
+
+<section id="cfg"><div class="wrap">
+  <h2>Classifier-free guidance — the accuracy dial</h2>
+  <p class="lead">During training we drop the class label ~10% of the time (replace it with the null class), so
+     the same network learns both a <b>conditional</b> and an <b>unconditional</b> denoiser. At sampling we
+     extrapolate between them with a guidance scale <code>w</code>.</p>
+  <div class="eq">train: y_in = y, but with prob 0.1 → ∅   <span style="color:var(--soft)"># label dropout</span>
+sample: <span class="lab">ε = ε(∅) + w · (ε(y) − ε(∅))</span>      <span style="color:var(--soft)"># w=0 unconditional · w↑ stronger class adherence</span></div>
+  <div class="note"><b>The theory:</b> higher <code>w</code> should make samples adhere more strongly to
+    the class (higher recognition) at the cost of diversity. The notebook and harness <b>sweep <code>w</code></b>
+    and report recognition at each.</div>
+  <div class="note" style="border-color:var(--stop); background:#22141a">
+    <b>What the reduced run actually showed:</b> guidance did <b>not</b> help — recognition went
+    <b>0.819 → 0.788 → 0.769</b> as <code>w</code> rose (≈1 → 3 → 5), and diversity barely moved (~0.25).
+    Model D landed at <b>0.82, below Model C's 0.95</b>. The most likely cause is <b>undertraining</b>
+    (10 epochs / 30 DDIM steps is far less than diffusion needs; the GANs converge fast at this tiny scale).
+    Diffusion <i>did</i> train stably. Treat as directional — a fair comparison needs more epochs / steps,
+    ideally on GPU. (<code>w</code>=0 ≡ <code>w</code>=1 here because the sampler shortcuts <code>w</code>=0
+    to the conditional path.)
+  </div>
+</div></section>
+
+<section id="sample"><div class="wrap">
+  <h2>Sampling with DDIM</h2>
+  <p class="lead">Deterministic DDIM lets us denoise in ~30–50 steps instead of 1000, which keeps generation
+     tractable (important on CPU). Each step predicts <code>ε</code> (conditional + unconditional for CFG),
+     estimates <code>x₀</code>, and renoises to the next timestep.</p>
+  <pre><code>x = noise
+for t in linspace(T-1, 0, DDIM_STEPS):
+    eps = eps(x, structure, t, y_null) + w*(eps(x, structure, t, y) - eps(x, structure, t, y_null))
+    x0  = clip((x - sqrt(1-ab_t)*eps) / sqrt(ab_t), -1, 1)
+    x   = sqrt(ab_next)*x0 + sqrt(1-ab_next)*eps</code></pre>
+</div></section>
+
+<section id="fit"><div class="wrap">
+  <h2>How Model D fits next to A/B/C</h2>
+  <table>
+    <tr><th>Aspect</th><th>A / B / C</th><th>Model D</th></tr>
+    <tr><td>Paradigm</td><td>cGAN (single-shot)</td><td class="go">Diffusion (iterative)</td></tr>
+    <tr><td>Loss</td><td>Adversarial (+ pixel / landmark / paired)</td><td>Denoising MSE only</td></tr>
+    <tr><td>Stability</td><td>Needs G/D balancing</td><td class="go">Stable</td></tr>
+    <tr><td>Conditioning</td><td>C: structure map (aligned)</td><td>Structure map (aligned) <b>+ CFG</b></td></tr>
+    <tr><td>Accuracy dial</td><td>—</td><td class="go">CFG scale w</td></tr>
+    <tr><td>Dependency</td><td>B needs MediaPipe; C OpenCV</td><td>OpenCV only</td></tr>
+  </table>
+</div></section>
+
+<section id="run"><div class="wrap">
+  <h2>Run it</h2>
+  <p class="lead">Two entry points, both reusing Model C's structure maps:</p>
+  <pre><code># Standalone Colab notebook (128px, full pipeline + CFG sweep + held-out test)
+notebooks/model_D_diffusion_structure.ipynb
+
+# Reduced local A/B/C/D comparison harness (64px, CPU) — adds Model D alongside A/B/C
+python experiments/scripts/train_eval_D.py   # -> experiments/results/results_D.json</code></pre>
+  <div class="note good"><b>Same metrics as A/B/C</b> (classifier-on-real GAN-test recognition, diversity),
+    plus the CFG sweep and the held-out structure generalization test — so D's numbers drop straight into the
+    same comparison table.</div>
+</div></section>
+
+<footer>
+  <div class="wrap">
+    Model D · structure-conditioned diffusion + classifier-free guidance · 128×128 · 32 classes<br/>
+    Project documentation — see <code>README.md</code>, <code>notebooks/model_D_diffusion_structure.ipynb</code>,
+    and <code>experiments/scripts/train_eval_D.py</code>.
+  </div>
+</footer>
+
+</body>
+</html>

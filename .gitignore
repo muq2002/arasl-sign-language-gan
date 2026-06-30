@@ -22,6 +22,9 @@ desktop.ini
 # experiment artifacts (local only — virtualenvs, big arrays, logs)
 arasl_venv/
 mp_venv/
+.venv_tf/
+.venv/
+venv/
 *.parquet
 experiments/arrays/
 experiments/results/*.log

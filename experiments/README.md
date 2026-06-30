@@ -1,9 +1,11 @@
-# Experiments — local A vs B vs C comparison (real runs)
+# Experiments — local A/B/C (+ D) comparison (real runs)
 
-Real, **reduced** head-to-head of the three models, executed on this PC (CPU —
-TensorFlow can't use the RTX 5060 on native Windows) against the **same ArASL2018
-dataset** Model A/B used (`pain/ArASL_Database_Grayscale` on Hugging Face —
-54,049 images, 32 classes, 64×64 grayscale; class names verified identical).
+Real, **reduced** head-to-head of the GAN models A/B/C — plus the diffusion model
+**D** as a separate script ([`scripts/train_eval_D.py`](scripts/train_eval_D.py)) —
+executed on this PC (CPU — TensorFlow can't use the RTX 5060 on native Windows)
+against the **same ArASL2018 dataset** Models A/B used
+(`pain/ArASL_Database_Grayscale` on Hugging Face — 54,049 images, 32 classes,
+64×64 grayscale; class names verified identical).
 
 ## 📁 Folder layout
 
@@ -58,6 +60,34 @@ Qualitative grid: `visualizations/assets/heldout_C.png`
 with only a 2.4-point drop vs training structures — strong evidence it learned the
 structure→image mapping rather than copying.
 
+## 🌀 Model D — structure-conditioned diffusion + classifier-free guidance
+
+A **different paradigm** from the A/B/C GANs (separate script:
+[`scripts/train_eval_D.py`](scripts/train_eval_D.py) → `results/results_D.json`). D keeps
+Model C's structure-map conditioning but replaces the single-shot generator with an
+**iterative denoising U-Net** (DDPM, MSE on the noise), and adds **classifier-free
+guidance (CFG)** — the class label is dropped ~10% of training steps so the net learns
+conditional + unconditional scores, and a guidance scale `w` at sampling trades diversity
+for class accuracy. Sampling uses **DDIM** (30 steps) to stay tractable on CPU.
+
+**Result of the reduced run** (10 classes · 64px · **10 epochs** · 30 DDIM steps ·
+classifier-on-real = 0.980, train time 2,199 s). CFG sweep — recognition vs guidance `w`:
+
+| CFG scale `w` | ≈1.0 (no guidance) | 3.0 | 5.0 |
+|---|:---:|:---:|:---:|
+| GAN-test recognition | **0.819** | 0.788 | 0.769 |
+| Diversity | 0.253 | 0.256 | 0.251 |
+
+> **Honest outcome — not a win here.** Model D scored **~0.82**, *below* Model C's
+> **0.95**, and CFG did **not** help (higher `w` slightly *lowered* recognition).
+> The most likely reason is that diffusion is **undertrained** at 10 epochs / 30
+> DDIM steps — it typically needs far more iterations and sampling steps than a GAN
+> to reach its quality ceiling, whereas the GANs converge fast at this tiny scale.
+> What *did* hold: diffusion trained **stably** (loss 0.100 → 0.034, no collapse, no
+> G/D balancing). Treat as a **reduced, directional** run; a fair comparison needs
+> more epochs / DDIM steps (ideally on GPU). Raw numbers: `results/results_D.json`.
+> (`w`=0 ≡ `w`=1 because the sampler shortcuts `w`=0 to the conditional path.)
+
 ## ⚠️ Scope / honesty
 
 Reduced run, **not** the full benchmark: 10/32 classes, 64×64, 6 epochs, single
@@ -79,6 +109,7 @@ python scripts/extract_lm.py         # MediaPipe landmarks -> arrays/LMtr.npy
 # main venv (TF):
 python scripts/train_eval.py         # quick A/B/C: results/results_5k.json + grids
 python scripts/train_eval_full.py    # full metrics + held-out test: results/results_full.json
+python scripts/train_eval_D.py       # Model D (diffusion+CFG): results/results_D.json + CFG sweep
 # optional: dump the whole dataset to class folders
 python scripts/extract_all_images.py # -> ../data/ArASL_dataset/
 ```

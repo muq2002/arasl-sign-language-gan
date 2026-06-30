@@ -59,6 +59,8 @@
   .card.A{border-top:3px solid var(--a)}
   .card.B{border-top:3px solid var(--b)}
   .card.C{border-top:3px solid var(--c)}
+  .card.D{border-top:3px solid var(--p)}
+  .grid4{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px}
 
   /* Steps */
   .step{display:flex; gap:16px; padding:14px 0; border-bottom:1px dashed var(--line)}
@@ -121,9 +123,10 @@
 <header class="hero">
   <div class="wrap">
     <h1>Arabic Sign Language Image Generation</h1>
-    <p>A step-by-step walkthrough of <b>three</b> conditional GANs trained on the <b>ArASL&nbsp;54K</b> dataset
-       (128×128 grayscale hand signs, 32 Arabic letter classes). They share one backbone but differ in
-       <b>how structure is supervised</b> — the axis that decides everything.</p>
+    <p>A step-by-step walkthrough of <b>four</b> generators trained on the <b>ArASL&nbsp;54K</b> dataset
+       (128×128 grayscale hand signs, 32 Arabic letter classes). Three are conditional GANs (A/B/C) that
+       differ in <b>how structure is supervised</b>; a fourth (D) switches paradigm to a
+       <b>structure-conditioned diffusion model</b>.</p>
     <div class="tagrow">
       <span class="tag">TensorFlow / Keras</span>
       <span class="tag">Conditional GAN</span>
@@ -131,6 +134,7 @@
       <span class="tag">Spectral Norm</span>
       <span class="tag">MediaPipe Hands</span>
       <span class="tag">Structure conditioning</span>
+      <span class="tag">Diffusion + CFG</span>
     </div>
   </div>
 </header>
@@ -142,8 +146,9 @@
     <a href="#modelA">Model A — Steps</a>
     <a href="#modelB">Model B — Steps</a>
     <a href="#modelC">Model C — Steps</a>
+    <a href="#modelD">Model D — Steps</a>
     <a href="#losses">Loss Functions</a>
-    <a href="#compare">A vs B vs C</a>
+    <a href="#compare">A vs B vs C vs D</a>
     <a href="#results">Results</a>
     <a href="#eval">Evaluation</a>
     <a href="#notes">Honest Notes</a>
@@ -151,17 +156,19 @@
     <a href="optimizations.html" style="color:var(--c)">⚡ Optimizations</a>
     <a href="problems-and-solutions.html" style="color:var(--d)">⚠ Problems &amp; Fixes</a>
     <a href="model-C-validation.html" style="color:var(--b)">✦ Model C (validate first)</a>
+    <a href="model-D-diffusion.html" style="color:var(--p)">✦ Model D (diffusion)</a>
   </div>
 </nav>
 
 <!-- OVERVIEW -->
 <section id="overview"><div class="wrap">
   <h2><span class="dot" style="background:var(--a)"></span>Overview</h2>
-  <p class="lead">All three models share the same generator/discriminator backbone and training schedule.
-     The only difference is <b>how structure is supervised</b> — and that single axis separates the two
-     that collapse (A, B) from the one that works (C).</p>
+  <p class="lead">A/B/C share the same GAN backbone and training schedule and differ only in
+     <b>how structure is supervised</b> — the axis that separates the two that collapse (A, B) from the one
+     that works (C). <b>Model D changes paradigm</b>: a structure-conditioned <b>diffusion</b> model with
+     classifier-free guidance.</p>
 
-  <div class="grid3">
+  <div class="grid4">
     <div class="card A">
       <h3 style="color:var(--a)">Model A — Pure cGAN</h3>
       <p style="color:var(--muted)">Conditioned on the <b>class label only</b>. Structure comes from a
@@ -193,6 +200,17 @@
         <span class="chip">+ structure map in</span>
         <span class="chip">paired (img, struct, label) D</span>
         <span class="chip">aligned target</span>
+      </div>
+    </div>
+    <div class="card D">
+      <h3 style="color:var(--p)">Model D — Diffusion + CFG</h3>
+      <p style="color:var(--muted)">A <b>different paradigm</b>: an iterative <b>denoising diffusion</b> U-Net,
+      not a GAN. Keeps C's structure conditioning but adds <b>classifier-free guidance</b> — a tunable dial that
+      trades diversity for <b>class accuracy</b>. Trains stably (no G/D balance).</p>
+      <div>
+        <span class="chip">DDPM ε-prediction</span>
+        <span class="chip">structure-conditioned U-Net</span>
+        <span class="chip">CFG accuracy dial</span>
       </div>
     </div>
   </div>
@@ -457,6 +475,79 @@
   </div>
 </div></section>
 
+<!-- MODEL D -->
+<section id="modelD"><div class="wrap">
+  <h2><span class="dot" style="background:var(--p)"></span>Model D — Step by Step</h2>
+  <p class="lead">A different paradigm: a structure-conditioned <b>diffusion</b> model with classifier-free
+     guidance — not a GAN. <span class="chip">notebooks/model_D_diffusion_structure.ipynb</span>
+     <span class="chip">experiments/scripts/train_eval_D.py</span></p>
+
+  <div class="card D">
+    <div class="step C">
+      <div class="num" style="background:linear-gradient(135deg,var(--p),#7c6ce0)">1</div><div class="body">
+        <h4>Same structure map as Model C</h4>
+        <p>Canny + silhouette + distance transform per image (100% coverage). D reuses C's winning
+           conditioning signal — only the <i>generator</i> changes.</p>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num" style="background:linear-gradient(135deg,var(--p),#7c6ce0)">2</div><div class="body">
+        <h4>Add noise on a schedule (DDPM forward process)</h4>
+        <p>A cosine β-schedule corrupts each real image to a noisy <code>x_t</code> at a random timestep
+           <code>t</code>. The model's job is to predict the noise that was added.</p>
+        <span class="chip">x_t = √ᾱ·x₀ + √(1−ᾱ)·ε</span>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num" style="background:linear-gradient(135deg,var(--p),#7c6ce0)">3</div><div class="body">
+        <h4>Time/class-conditioned U-Net predicts the noise</h4>
+        <p>The structure map is <b>concatenated to <code>x_t</code></b> at the input (ControlNet-lite); the
+           timestep and class enter via a shared embedding added at every block. Loss is a simple MSE on ε.</p>
+        <span class="chip">loss = ‖ε̂ − ε‖²</span>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num" style="background:linear-gradient(135deg,var(--p),#7c6ce0)">4</div><div class="body">
+        <h4>Classifier-free guidance (the accuracy dial)</h4>
+        <p>The class label is dropped ~10% of training steps (→ a null class), so the net learns both
+           conditional and unconditional scores. At sampling, <code>ε = ε_uncond + w·(ε_cond − ε_uncond)</code>:
+           larger <b>w</b> ⇒ stronger class adherence ⇒ higher recognition.</p>
+        <span class="chip">CFG scale w</span>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num" style="background:linear-gradient(135deg,var(--p),#7c6ce0)">5</div><div class="body">
+        <h4>Sample with DDIM (few steps)</h4>
+        <p>Start from noise, denoise over ~30–50 DDIM steps guided by the structure map + class. Fewer
+           steps than full DDPM keeps generation tractable on CPU.</p>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num" style="background:linear-gradient(135deg,var(--p),#7c6ce0)">6</div><div class="body">
+        <h4>Evaluate + sweep the guidance scale</h4>
+        <p>Same GAN-test recognition / diversity as A/B/C, plus a <b>CFG sweep</b> (recognition vs <code>w</code>)
+           and the held-out structure test. Diffusion trains <b>stably</b> — no G/D balancing, no mode collapse.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Model D diffusion loop (the core idea)</h3>
+  <div class="flow">
+    <span class="node cond">structure map</span><span class="arrow">+</span>
+    <span class="node">noisy x_t</span><span class="arrow">+</span>
+    <span class="node gen">t, class (CFG)</span><span class="arrow">→</span>
+    <span class="node gen">U-Net → ε̂</span><span class="arrow">→</span>
+    <span class="node out">DDIM step ×N</span><span class="arrow">→</span>
+    <span class="node out">sample</span>
+  </div>
+
+  <div class="note">
+    <b>Deeper walkthrough:</b> see the dedicated
+    <a href="model-D-diffusion.html">Model D — diffusion &amp; classifier-free guidance</a> page, and the
+    <a href="../experiments/">raw local A/B/C/D runs</a>.
+  </div>
+</div></section>
+
 <!-- LOSSES -->
 <section id="losses"><div class="wrap">
   <h2><span class="dot" style="background:var(--c)"></span>The Loss Functions</h2>
@@ -480,51 +571,70 @@ fake    = G(<span class="lab">structure</span>, label, z)
 G_total = <span class="lab">g_adv( D(fake, structure, label) )</span>   <span style="color:var(--soft)"># conditioning + target come from the SAME image → aligned, no class-mean</span>
   </div>
 
+  <h3>Model D — Diffusion objective (no adversary)</h3>
+  <div class="eq">
+x_t   = √ᾱ_t·x₀ + √(1−ᾱ_t)·<span class="lab">ε</span>      <span style="color:var(--soft)"># forward noising</span>
+y_in  = label, dropped→∅ with prob 0.1          <span style="color:var(--soft)"># classifier-free guidance</span>
+L     = <span class="lab">‖ U-Net(x_t, structure, t, y_in) − ε ‖²</span>   <span style="color:var(--soft)"># simple MSE on the noise</span>
+sample: ε = ε(∅) + <span class="lab">w</span>·(ε(y) − ε(∅))         <span style="color:var(--soft)"># guidance scale w = accuracy dial</span>
+  </div>
+
   <table>
-    <tr><th>Term</th><th>Purpose</th><th>A</th><th>B</th><th>C</th></tr>
-    <tr><td>Adversarial (BCE vs D)</td><td>Make images look real for the class</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
-    <tr><td>Pixel L1 (unaligned target)</td><td>Anchor coarse structure to real images</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✕</td></tr>
-    <tr><td>Landmark MSE</td><td>Guide hand-joint geometry</td><td class="no">✕</td><td class="ok">✓</td><td class="no">✕</td></tr>
-    <tr><td>Variance term</td><td>Labelled "diversity" (see notes)</td><td class="no">✕</td><td class="ok">✓</td><td class="no">✕</td></tr>
-    <tr><td>Structure conditioning (input)</td><td>Tell G the exact hand shape; aligned target</td><td class="no">✕</td><td class="no">✕</td><td class="ok">✓</td></tr>
-    <tr><td>Paired (img, struct, label) D</td><td>Judge image against its own structure</td><td class="no">✕</td><td class="no">✕</td><td class="ok">✓</td></tr>
+    <tr><th>Term</th><th>Purpose</th><th>A</th><th>B</th><th>C</th><th>D</th></tr>
+    <tr><td>Adversarial (BCE vs D)</td><td>Make images look real for the class</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✕</td></tr>
+    <tr><td>Pixel L1 (unaligned target)</td><td>Anchor coarse structure to real images</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
+    <tr><td>Landmark MSE</td><td>Guide hand-joint geometry</td><td class="no">✕</td><td class="ok">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
+    <tr><td>Variance term</td><td>Labelled "diversity" (see notes)</td><td class="no">✕</td><td class="ok">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
+    <tr><td>Structure conditioning (input)</td><td>Tell the net the exact hand shape; aligned</td><td class="no">✕</td><td class="no">✕</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+    <tr><td>Paired (img, struct, label) D</td><td>Judge image against its own structure</td><td class="no">✕</td><td class="no">✕</td><td class="ok">✓</td><td class="no">✕</td></tr>
+    <tr><td>Denoising MSE (ε-prediction)</td><td>Learn to reverse the noising process</td><td class="no">✕</td><td class="no">✕</td><td class="no">✕</td><td class="ok">✓</td></tr>
+    <tr><td>Classifier-free guidance</td><td>Tunable class-accuracy dial at sampling</td><td class="no">✕</td><td class="no">✕</td><td class="no">✕</td><td class="ok">✓</td></tr>
   </table>
 </div></section>
 
 <!-- COMPARE -->
 <section id="compare"><div class="wrap">
-  <h2><span class="dot" style="background:var(--p)"></span>Model A vs B vs C at a glance</h2>
+  <h2><span class="dot" style="background:var(--p)"></span>Model A vs B vs C vs D at a glance</h2>
   <table>
-    <tr><th>Aspect</th><th>Model A</th><th>Model B</th><th>Model C</th></tr>
-    <tr><td>Image size</td><td>128×128</td><td>128×128</td><td>128×128</td></tr>
-    <tr><td>Backbone (G/D)</td><td>SAGAN cGAN + spectral norm</td><td>Identical</td><td>Identical + structure input &amp; paired D</td></tr>
-    <tr><td>Conditioned on</td><td>Class label</td><td>Class label</td><td>Class label <b>+ per-image structure map</b></td></tr>
-    <tr><td>Structural supervision</td><td>Pixel L1 (unaligned)</td><td>Pixel L1 + landmark MSE (unaligned)</td><td>Adversarial + paired (aligned)</td></tr>
-    <tr><td>Target alignment</td><td class="no">Unaligned → class-mean</td><td class="no">Unaligned → class-mean</td><td class="ok">Same image → aligned</td></tr>
-    <tr><td>External dependency</td><td>None</td><td>MediaPipe Hands</td><td>OpenCV (Canny / distance transform)</td></tr>
-    <tr><td>Extra trained module</td><td>—</td><td>Frozen landmark regressor</td><td>—</td></tr>
-    <tr><td>λ schedules</td><td>1 (pixel)</td><td>2 (pixel + landmark)</td><td>0 (no structural loss term)</td></tr>
-    <tr><td>Evaluation extras</td><td>FID, SSIM, LPIPS, diversity</td><td>+ PKLE (landmark error)</td><td>+ GAN-test/train, held-out structure test</td></tr>
+    <tr><th>Aspect</th><th>Model A</th><th>Model B</th><th>Model C</th><th>Model D</th></tr>
+    <tr><td>Paradigm</td><td>cGAN</td><td>cGAN</td><td>cGAN</td><td class="ok"><b>Diffusion</b></td></tr>
+    <tr><td>Generator</td><td>SAGAN, single-shot</td><td>SAGAN, single-shot</td><td>encoder–decoder, single-shot</td><td>iterative U-Net denoiser</td></tr>
+    <tr><td>Conditioned on</td><td>Class label</td><td>Class label</td><td>Label + structure map</td><td>Label + structure map <b>+ CFG</b></td></tr>
+    <tr><td>Structural supervision</td><td>Pixel L1 (unaligned)</td><td>Pixel L1 + landmark MSE</td><td>Adversarial + paired (aligned)</td><td>Denoising MSE (aligned)</td></tr>
+    <tr><td>Training stability</td><td>G/D balancing</td><td>G/D balancing</td><td>G/D balancing</td><td class="ok">Stable (single MSE)</td></tr>
+    <tr><td>Accuracy dial</td><td>—</td><td>—</td><td>—</td><td class="ok">CFG scale w</td></tr>
+    <tr><td>External dependency</td><td>None</td><td>MediaPipe Hands</td><td>OpenCV</td><td>OpenCV</td></tr>
+    <tr><td>Evaluation extras</td><td>FID, SSIM, LPIPS, diversity</td><td>+ PKLE</td><td>+ GAN-test, held-out test</td><td>+ CFG sweep, held-out test</td></tr>
   </table>
 </div></section>
 
 <!-- RESULTS -->
 <section id="results"><div class="wrap">
   <h2><span class="dot" style="background:var(--c)"></span>Results at a glance (local 5K run)</h2>
-  <p class="lead">Reduced CPU run — 10 classes, 4,750 train / 250 held-out, 64×64, 6 epochs
-     (reference classifier on real = 0.956, chance = 0.10). Treat magnitudes as <b>directional</b>;
-     the ordering <b>C ≫ A ≈ B</b> is the signal.</p>
+  <p class="lead">Reduced CPU run — 10 classes, 4,750 train / 250 held-out, 64×64 (chance = 0.10).
+     A/B/C: 6 epochs, classifier-on-real = 0.956. D: 10 epochs / 30 DDIM steps, classifier-on-real = 0.980.
+     Treat magnitudes as <b>directional</b>.</p>
   <table>
     <tr><th>Model</th><th>GAN-test ↑</th><th>GAN-train ↑</th><th>Diversity ↑</th><th>Train time</th></tr>
     <tr><td>A — no MediaPipe</td><td>0.447</td><td>0.144</td><td>0.105</td><td>432 s</td></tr>
     <tr><td>B — MediaPipe landmark loss</td><td>0.547</td><td>0.232</td><td>0.125</td><td>372 s</td></tr>
-    <tr><td><b style="color:var(--c)">C — structure-conditioned</b></td><td class="ok">0.947</td><td>0.204</td><td class="ok">0.330</td><td>889 s</td></tr>
+    <tr><td><b style="color:var(--c)">C — structure-conditioned GAN</b></td><td class="ok">0.947</td><td>0.204</td><td class="ok">0.330</td><td>889 s</td></tr>
+    <tr><td><b style="color:var(--p)">D — structure-conditioned diffusion + CFG</b></td><td>0.819</td><td>—</td><td>0.256</td><td>2 199 s</td></tr>
   </table>
   <p style="color:var(--muted); font-size:.92rem">
     <b>GAN-test</b> = classifier trained on real, tested on generated (recognizability).
-    <b>GAN-train</b> = classifier trained on generated, tested on real (usefulness as data).
-    B's MediaPipe detection was only <b>2.06%</b> at 64px, so its landmark loss was masked out for ~98% of
-    samples. Raw runs + the held-out structure test live in <a href="../experiments/">experiments/</a>.
+    <b>GAN-train</b> = classifier trained on generated, tested on real. B's MediaPipe detection was only
+    <b>2.06%</b> at 64px, so its landmark loss was masked out for ~98% of samples.
+    <b>Honest note on D:</b> in this reduced run <b>C still leads</b> — diffusion landed at 0.82 and CFG did
+    <i>not</i> raise recognition (the <a href="#evalD-note">CFG sweep</a> goes 0.82→0.77 as <code>w</code> rises).
+    The likely cause is <b>undertraining</b> (10 epochs / 30 DDIM steps is far less than diffusion needs; the
+    GANs converge fast at this scale). D <i>did</i> train stably. Not a verdict that diffusion is worse — a fair
+    test needs more epochs / steps. Raw runs: <a href="../experiments/">experiments/</a>.
+  </p>
+  <p id="evalD-note" style="color:var(--muted); font-size:.9rem; margin-top:10px">
+    <b>Model D CFG sweep</b> (recognition · diversity): w≈1 <b>0.819</b>·0.253 · w=3 0.788·0.256 · w=5 0.769·0.251.
+    Higher guidance slightly reduced recognition here — the expected fidelity/diversity trade-off did not
+    materialize at this (undertrained) scale.
   </p>
 </div></section>
 
@@ -578,11 +688,19 @@ G_total = <span class="lab">g_adv( D(fake, structure, label) )</span>   <span st
     <b>Model C is exactly this</b>, and it wins the local A/B/C run decisively
     (<a href="#results">GAN-test 0.95 vs ~0.5</a>).
   </div>
+  <div class="note">
+    <b>Model D pushes further — but mind the cost.</b> Diffusion (D) trades single-shot speed for
+    <b>iterative sampling</b> (~30–50 DDIM steps per image), so generation is much slower than the GANs;
+    on CPU the reduced run is correspondingly heavier. Classifier-free guidance helps recognition but at
+    high <code>w</code> it <i>reduces diversity</i> (the usual fidelity/diversity trade-off) — read the
+    <a href="#results">CFG sweep</a>, don't just take the peak. Numbers here are still <b>directional</b>
+    (reduced classes / resolution / steps), like A/B/C.
+  </div>
 </div></section>
 
 <footer>
   <div class="wrap">
-    ArASL cGAN walkthrough · Model A (no MediaPipe) · Model B (MediaPipe) · Model C (structure-conditioned) · 128×128 · 32 classes<br/>
+    ArASL walkthrough · A (no MediaPipe) · B (MediaPipe) · C (structure-conditioned GAN) · D (structure-conditioned diffusion + CFG) · 128×128 · 32 classes<br/>
     Generated as project documentation — see <code>README.md</code> and the notebooks under <code>notebooks/</code>.
   </div>
 </footer>

@@ -1,0 +1,63 @@
+{
+  "results": {
+    "D": {
+      "recognition_acc": 0.7875,
+      "diversity": 0.2558
+    }
+  },
+  "model_D": {
+    "recognition_acc": 0.7875,
+    "diversity": 0.2558,
+    "cfg_scale": 3.0,
+    "best_cfg": 0.0,
+    "best_recognition": 0.8187,
+    "cfg_sweep": {
+      "0.0": {
+        "recognition_acc": 0.8187,
+        "diversity": 0.2528
+      },
+      "1.0": {
+        "recognition_acc": 0.8187,
+        "diversity": 0.2528
+      },
+      "3.0": {
+        "recognition_acc": 0.7875,
+        "diversity": 0.2558
+      },
+      "5.0": {
+        "recognition_acc": 0.7688,
+        "diversity": 0.2512
+      }
+    }
+  },
+  "times": {
+    "D": 2198.7,
+    "classifier": 456.2
+  },
+  "real_acc": 0.9800000190734863,
+  "meta": {
+    "classes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "img": 64,
+    "per_class": 500,
+    "n_train": 4750,
+    "n_eval": 250
+  },
+  "config": {
+    "T_TRAIN": 1000,
+    "DDIM_STEPS": 30,
+    "P_UNCOND": 0.1,
+    "EPOCHS": 10,
+    "CFG_EVAL": 3.0
+  }
+}
