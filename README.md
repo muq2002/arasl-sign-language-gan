@@ -5,14 +5,66 @@ Two conditional GANs that generate 128×128 grayscale Arabic Sign Language hand 
 
 ## Models
 
-| Model | Notebook | Structural supervision | Extra dependency |
-|-------|----------|------------------------|------------------|
-| **A** | [`notebooks/model_A_cgan_128_no_mediapipe.ipynb`](notebooks/model_A_cgan_128_no_mediapipe.ipynb) | Pixel L1 only | — |
-| **B** | [`notebooks/model_B_cgan_128_mediapipe.ipynb`](notebooks/model_B_cgan_128_mediapipe.ipynb) | Pixel L1 + MediaPipe landmark MSE | MediaPipe Hands |
+This repo evaluates **three** conditional generators on ArASL. All share one backbone
+but differ in *how* they get structural supervision — the axis that turns out to decide
+everything.
 
-Both share the same backbone: a class-conditional SAGAN generator (self-attention at 32×32),
-a spectral-normalized discriminator with spatial label projection, asymmetric learning rates,
-label smoothing, and an adaptive G:D update ratio.
+| Model | Notebook | How it's conditioned | Structural supervision | Extra dependency |
+|-------|----------|----------------------|------------------------|------------------|
+| **A** | [`notebooks/model_A_cgan_128_no_mediapipe.ipynb`](notebooks/model_A_cgan_128_no_mediapipe.ipynb) | Class label only | Pixel L1 to an unaligned target | — |
+| **B** | [`notebooks/model_B_cgan_128_mediapipe.ipynb`](notebooks/model_B_cgan_128_mediapipe.ipynb) | Class label only | Pixel L1 **+** MediaPipe landmark MSE | MediaPipe Hands |
+| **C** | [`notebooks/model_comparison_ABC.ipynb`](notebooks/model_comparison_ABC.ipynb) | Class label **+ per-image structure map** | Adversarial + paired (structure and target from the *same* image) | OpenCV (Canny/distance transform) |
+
+### Shared backbone (A, B, C)
+
+A class-conditional SAGAN: a generator with **self-attention at 32×32**, a
+**spectral-normalized** discriminator using **spatial label projection**, **asymmetric
+learning rates** (`LR_G = 2e-4`, `LR_D = 1e-4`), **label smoothing** (0.9), and an
+**adaptive G:D update ratio** (up to 2 G-steps per D-step). Latent `Z_DIM = 128`,
+128×128 grayscale, 32 letter classes. See [`src/config.py`](src/config.py) for the full
+hyperparameter set and the staged pixel-loss schedule (`LAMBDA_PIX` warms 0.5 → 5.0).
+
+### Model A — class-conditioned cGAN, pixel loss only (the baseline)
+
+The plain baseline: the generator sees **only the class label** and noise. Structural
+guidance comes entirely from a **pixel L1** term against a real image of that class.
+Because the sampled fake and the real target are **not aligned**, the L1 minimizer drifts
+toward the per-class *mean* image — a regress-to-mean pressure that **suppresses diversity**
+(local run: diversity ≈ 0.11, GAN-test ≈ 0.45). A is the control that isolates what the
+extra supervision in B and C actually buys.
+
+### Model B — A + MediaPipe landmark loss (the "structure-as-loss" hypothesis)
+
+Identical to A, plus a second supervision signal: a landmark regressor / MediaPipe Hands
+extracts 21 hand keypoints and B adds a **landmark MSE** loss (`LAMBDA_LM` warms 0 → 2.0
+after a 15-epoch delay). The bet is that scoring generated hands against landmark targets
+will enforce correct finger structure **without changing the conditioning**.
+
+It doesn't pan out here. MediaPipe is built for in-the-wild RGB hands; on tightly-cropped
+**low-res grayscale alphabet** signs its **detection rate collapses** (only **2.06%** at
+64px in the local run), so the landmark loss is **masked out for ~98% of samples** and adds
+essentially nothing over A. Worse, the landmark target is still **unaligned** with the
+sampled fake — same regress-to-mean trap as A. B is a faithful test of a plausible idea
+that the data simply doesn't support.
+
+### Model C — structure-conditioned cGAN (the one that works)
+
+C changes the *conditioning*, not just the loss. For every image it computes a 3-channel
+**structure map** — **Canny edges + silhouette + distance transform** (see
+[`experiments/scripts/prep_data.py`](experiments/scripts/prep_data.py)) — and feeds that map
+to the generator **and** to a **paired discriminator** that judges `(image, structure, label)`
+triples. Crucially the structure map and the target come from the **same image**, restoring
+the spatial correspondence that A and B lack, so there is no regress-to-mean pressure
+(diversity jumps to ≈ 0.33).
+
+In the local 5K run C wins decisively — **GAN-test 0.95 vs ~0.5 for A/B**, uniformly strong
+across all 10 classes — and a **held-out structure test** confirms it *generalizes* rather
+than memorizes: feeding C structure maps from 250 images it never trained on still yields
+**0.93 recognition** (gap of just **0.024** vs training structures) and **SSIM 0.95** against
+the true target. The trade is ~1.5× the training time (heavier conditioned encoder + paired
+discriminator). This mirrors the broader literature — conditioning on structure (edges /
+pose / skeleton) is the consensus method behind pix2pix, ControlNet, and modern sign-language
+generators. See [`reports/`](reports/) for the prior-art search and verdict.
 
 ## Documentation
 
@@ -40,16 +92,21 @@ an A-vs-B comparison, the evaluation suite, and honest engineering notes.
 └── data/             # dataset (gitignored — large): ArASL_dataset/, samples/, arasl.parquet
 ```
 
-## A third model — Model C (structure-conditioned)
+## Results at a glance (local 5K run)
 
-Beyond the two original models, this repo evaluates **Model C**, which conditions
-the generator on a **structure map computed from each image** (Canny edge +
-silhouette + distance transform) instead of using MediaPipe as a loss. In the local
-5K runs it wins decisively (**GAN-test 0.95 vs ~0.5 for A/B**) and a **held-out
-structure test** confirms it generalizes (recognition 0.93 on unseen structures,
-generalization gap 0.024, fidelity SSIM 0.95). See [`reports/`](reports/) for the
-verdict, prior-art search, and visual A-vs-B-vs-C explanation, and
-[`experiments/`](experiments/) for the raw runs.
+Reduced CPU run — 10 classes, 4,750 train / 250 held-out, 64×64, 6 epochs
+(reference classifier on real = 0.956, chance = 0.10). Treat magnitudes as
+**directional**; the ordering **C ≫ A ≈ B** is the signal.
+
+| Model | GAN-test ↑ | GAN-train ↑ | Diversity ↑ | Train time |
+|-------|:---:|:---:|:---:|:---:|
+| A — no MediaPipe            | 0.447 | 0.144 | 0.105 | 432 s |
+| B — MediaPipe landmark loss | 0.547 | 0.232 | 0.125 | 372 s |
+| **C — structure-conditioned** | **0.947** | 0.204 | **0.330** | 889 s |
+
+See [`reports/`](reports/) for the prior-art search and verdict, and
+[`experiments/`](experiments/) for the raw runs (including the Model-C held-out
+structure test).
 
 ## Dataset
 
