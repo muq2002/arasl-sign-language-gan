@@ -169,6 +169,50 @@ flowchart LR
     class Y,DDIM dial;
 ```
 
+#### Model D — block diagram (U-Net architecture + train/sample paths)
+
+```mermaid
+flowchart TB
+    subgraph IN["inputs"]
+        XT["noisy image x_t · 1ch"]
+        SM["structure map · 3ch<br/>Canny + silhouette + distance"]
+        TT["timestep t"]
+        YY["class y<br/>(10% → ∅ for CFG)"]
+    end
+    XT --> CAT["concat · 4ch"]
+    SM --> CAT
+    TT --> TE["sinusoidal embed"]
+    YY --> YE["class embed (+null row)"]
+    TE --> EMB["+ → MLP embedding"]
+    YE --> EMB
+
+    subgraph UNET["structure-conditioned U-Net (ε-predictor)"]
+        CAT --> E1["enc 32 · 64²"]
+        E1 --> E2["enc 64 · 32²"]
+        E2 --> E3["enc 128 · 16²"]
+        E3 --> BN["bottleneck 256 · 8²"]
+        BN --> D3["dec 128 ↑ + skip E3"]
+        D3 --> D2["dec 64 ↑ + skip E2"]
+        D2 --> D1["dec 32 ↑ + skip E1"]
+        D1 --> EPS["Conv → ε̂ · 1ch"]
+    end
+    EMB -. "added at every block" .-> UNET
+
+    EPS --> TRAIN["TRAIN: loss = ‖ε̂ − ε‖²"]
+    EPS --> SAMPLE["SAMPLE: DDIM × N steps<br/>ε = ε(∅) + w·(ε(y) − ε(∅))"]
+    SAMPLE --> IMG["generated 64×64 image"]
+
+    classDef good fill:#10261d,stroke:#2ea043,color:#bff0dc;
+    classDef dial fill:#1c1733,stroke:#9d8df5,color:#d9d2ff;
+    class SM good;
+    class YY,SAMPLE dial;
+```
+
+> Channels shown match the reduced 64px harness (`experiments/scripts/train_eval_D.py`);
+> the 128px notebook adds one more encoder/decoder level. The timestep+class embedding is
+> injected at **every** conv block; the structure map is concatenated only at the input
+> (ControlNet-lite). Classifier-free guidance acts at **sampling** time via the scale `w`.
+
 ## Documentation
 
 An attractive step-by-step walkthrough of how all four models work:
