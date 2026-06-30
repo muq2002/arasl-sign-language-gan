@@ -33,6 +33,21 @@ toward the per-class *mean* image — a regress-to-mean pressure that **suppress
 (local run: diversity ≈ 0.11, GAN-test ≈ 0.45). A is the control that isolates what the
 extra supervision in B and C actually buys.
 
+```mermaid
+flowchart LR
+    Z["noise z (128)"] --> G(("Generator<br/>SAGAN"))
+    Y["class label"] --> G
+    G --> F["fake image<br/>128×128×1"]
+    F --> D{"Discriminator<br/>(image, label)"}
+    Y --> D
+    R["real image<br/>(same class)"] --> D
+    D --> ADV["adversarial loss"]
+    F -. "pixel L1<br/>(UNALIGNED → class mean)" .-> R
+    ADV --> G
+    classDef loss fill:#2a1416,stroke:#f85149,color:#f0d0d0;
+    class ADV loss;
+```
+
 ### Model B — A + MediaPipe landmark loss (the "structure-as-loss" hypothesis)
 
 Identical to A, plus a second supervision signal: a landmark regressor / MediaPipe Hands
@@ -46,6 +61,26 @@ It doesn't pan out here. MediaPipe is built for in-the-wild RGB hands; on tightl
 essentially nothing over A. Worse, the landmark target is still **unaligned** with the
 sampled fake — same regress-to-mean trap as A. B is a faithful test of a plausible idea
 that the data simply doesn't support.
+
+```mermaid
+flowchart LR
+    Z["noise z (128)"] --> G(("Generator<br/>SAGAN"))
+    Y["class label"] --> G
+    G --> F["fake image<br/>128×128×1"]
+    F --> D{"Discriminator<br/>(image, label)"}
+    Y --> D
+    R["real image<br/>(same class)"] --> D
+    D --> ADV["adversarial loss"]
+    F -. "pixel L1 (unaligned)" .-> R
+    F --> REG["frozen landmark<br/>regressor (21 joints)"]
+    MP["MediaPipe Hands<br/>~2% detection → mostly masked"] --> REG
+    REG -. "landmark MSE<br/>(masked ~98%)" .-> LM["real landmarks"]
+    ADV --> G
+    classDef loss fill:#2a1416,stroke:#f85149,color:#f0d0d0;
+    classDef weak fill:#241d0e,stroke:#d29922,color:#f0e0c0;
+    class ADV loss;
+    class MP,REG weak;
+```
 
 ### Model C — structure-conditioned cGAN (the one that works)
 
@@ -66,6 +101,24 @@ the true target. The trade is ~1.5× the training time (heavier conditioned enco
 discriminator). This mirrors the broader literature — conditioning on structure (edges /
 pose / skeleton) is the consensus method behind pix2pix, ControlNet, and modern sign-language
 generators. See [`reports/`](reports/) for the prior-art search and verdict.
+
+```mermaid
+flowchart LR
+    R["real image"] --> SM["structure map<br/>Canny + silhouette + distance"]
+    SM --> G(("Generator<br/>encoder–decoder"))
+    Y["class label"] --> G
+    Z["noise z (style)"] --> G
+    G --> F["fake image<br/>128×128×1"]
+    F --> D{"Paired Discriminator<br/>(image, structure, label)"}
+    SM --> D
+    Y --> D
+    R --> D
+    D --> ADV["adversarial loss"]
+    F -. "L1 (ALIGNED → same image)" .-> R
+    ADV --> G
+    classDef good fill:#10261d,stroke:#2ea043,color:#bff0dc;
+    class SM,ADV good;
+```
 
 ## Documentation
 
