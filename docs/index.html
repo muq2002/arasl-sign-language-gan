@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ArASL cGAN — How Model A & Model B Work</title>
+<title>ArASL cGAN — How Models A, B & C Work</title>
 <style>
   :root{
     --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3340;
@@ -52,10 +52,13 @@
 
   /* Cards & grid */
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px}
+  @media(max-width:880px){.grid3{grid-template-columns:1fr}}
   @media(max-width:780px){.grid2{grid-template-columns:1fr}}
   .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px 22px}
   .card.A{border-top:3px solid var(--a)}
   .card.B{border-top:3px solid var(--b)}
+  .card.C{border-top:3px solid var(--c)}
 
   /* Steps */
   .step{display:flex; gap:16px; padding:14px 0; border-bottom:1px dashed var(--line)}
@@ -63,6 +66,9 @@
   .num{flex:0 0 36px; height:36px; border-radius:10px; display:grid; place-items:center;
        font-weight:700; color:#06101e; background:linear-gradient(135deg,var(--a),var(--a2))}
   .B .num{background:linear-gradient(135deg,var(--b),#2f9d77)}
+  .C .num{background:linear-gradient(135deg,var(--c),#d98a2b)}
+  .node.cond{border-color:var(--c); color:#f0cf9d}
+  .node.out{border-color:var(--b); color:#bff0dc}
   .step .body{flex:1}
   .step h4{margin:.1em 0 .25em; font-size:1.02rem}
   .step p{margin:.2em 0; color:var(--muted); font-size:.95rem}
@@ -115,14 +121,16 @@
 <header class="hero">
   <div class="wrap">
     <h1>Arabic Sign Language Image Generation</h1>
-    <p>A step-by-step walkthrough of two conditional GANs trained on the <b>ArASL&nbsp;54K</b> dataset
-       (128×128 grayscale hand signs, 32 Arabic letter classes).</p>
+    <p>A step-by-step walkthrough of <b>three</b> conditional GANs trained on the <b>ArASL&nbsp;54K</b> dataset
+       (128×128 grayscale hand signs, 32 Arabic letter classes). They share one backbone but differ in
+       <b>how structure is supervised</b> — the axis that decides everything.</p>
     <div class="tagrow">
       <span class="tag">TensorFlow / Keras</span>
       <span class="tag">Conditional GAN</span>
       <span class="tag">Self-Attention (SAGAN)</span>
       <span class="tag">Spectral Norm</span>
       <span class="tag">MediaPipe Hands</span>
+      <span class="tag">Structure conditioning</span>
     </div>
   </div>
 </header>
@@ -133,8 +141,10 @@
     <a href="#shared">Shared Backbone</a>
     <a href="#modelA">Model A — Steps</a>
     <a href="#modelB">Model B — Steps</a>
+    <a href="#modelC">Model C — Steps</a>
     <a href="#losses">Loss Functions</a>
-    <a href="#compare">A vs B</a>
+    <a href="#compare">A vs B vs C</a>
+    <a href="#results">Results</a>
     <a href="#eval">Evaluation</a>
     <a href="#notes">Honest Notes</a>
     <a href="generator-architecture.html" style="color:var(--b)">✦ Generator (animated)</a>
@@ -147,14 +157,16 @@
 <!-- OVERVIEW -->
 <section id="overview"><div class="wrap">
   <h2><span class="dot" style="background:var(--a)"></span>Overview</h2>
-  <p class="lead">Both models share the same generator/discriminator backbone and training schedule.
-     The only difference is <b>how structure is supervised</b>.</p>
+  <p class="lead">All three models share the same generator/discriminator backbone and training schedule.
+     The only difference is <b>how structure is supervised</b> — and that single axis separates the two
+     that collapse (A, B) from the one that works (C).</p>
 
-  <div class="grid2">
+  <div class="grid3">
     <div class="card A">
       <h3 style="color:var(--a)">Model A — Pure cGAN</h3>
-      <p style="color:var(--muted)">Adversarial loss + a <b>pixel structural</b> loss that pulls
-      generated images toward real images of the same class. No hand-pose knowledge.</p>
+      <p style="color:var(--muted)">Conditioned on the <b>class label only</b>. Structure comes from a
+      <b>pixel L1</b> loss toward an <i>unaligned</i> real image of the class — which pulls outputs toward the
+      class mean. The control baseline.</p>
       <div>
         <span class="chip">noise z → image</span>
         <span class="chip">label condition</span>
@@ -163,13 +175,24 @@
     </div>
     <div class="card B">
       <h3 style="color:var(--b)">Model B — cGAN + MediaPipe</h3>
-      <p style="color:var(--muted)">Everything in Model A <b>plus</b> a hand-landmark signal:
-      MediaPipe extracts 21 joints, a frozen CNN regressor turns that into a differentiable
-      <b>landmark loss</b> guiding hand geometry.</p>
+      <p style="color:var(--muted)">Model A <b>plus</b> a hand-landmark loss: MediaPipe extracts 21 joints,
+      a frozen CNN regressor makes it differentiable. Same label-only conditioning — and detection collapses
+      to <b>~2%</b> on low-res grayscale, so the loss is mostly masked out.</p>
       <div>
         <span class="chip">+ MediaPipe 21 joints</span>
         <span class="chip">+ landmark regressor</span>
         <span class="chip">+ landmark loss</span>
+      </div>
+    </div>
+    <div class="card C">
+      <h3 style="color:var(--c)">Model C — Structure-conditioned</h3>
+      <p style="color:var(--muted)">Changes the <b>conditioning</b>, not just the loss. A per-image
+      <b>structure map</b> (Canny + silhouette + distance transform) feeds the generator and a <b>paired
+      discriminator</b>. Map and target come from the <i>same</i> image → no regress-to-mean. <b>It wins.</b></p>
+      <div>
+        <span class="chip">+ structure map in</span>
+        <span class="chip">paired (img, struct, label) D</span>
+        <span class="chip">aligned target</span>
       </div>
     </div>
   </div>
@@ -178,7 +201,7 @@
     <span><i class="sw" style="background:var(--a)"></i> Generator path</span>
     <span><i class="sw" style="background:var(--d)"></i> Discriminator path</span>
     <span><i class="sw" style="background:var(--b)"></i> Landmark path (Model B only)</span>
-    <span><i class="sw" style="background:var(--c)"></i> Loss weighting (λ)</span>
+    <span><i class="sw" style="background:var(--c)"></i> Structure conditioning (Model C) / loss weighting (λ)</span>
   </div>
 </div></section>
 
@@ -361,6 +384,79 @@
   </div>
 </div></section>
 
+<!-- MODEL C -->
+<section id="modelC"><div class="wrap">
+  <h2><span class="dot" style="background:var(--c)"></span>Model C — Step by Step</h2>
+  <p class="lead">Conditions the generator on a per-image structure map instead of scoring against an
+     unaligned target. <span class="chip">notebooks/model_C_cgan_128_structure.ipynb</span>
+     <span class="chip">notebooks/model_comparison_ABC.ipynb</span></p>
+
+  <div class="card C">
+    <div class="step C">
+      <div class="num">1</div><div class="body">
+        <h4>Load &amp; preprocess</h4>
+        <p>Same grayscale images, same 32 classes as A and B.</p>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num">2</div><div class="body">
+        <h4>Compute a structure map for every image</h4>
+        <p>A 3-channel map is derived per image: <b>Canny edges</b>, <b>silhouette</b>, and
+           <b>distance transform</b>. Unlike MediaPipe it has <b>100% coverage</b> — no detector to fail.</p>
+        <span class="chip">structure_map() → (H,W,3)</span>
+        <span class="chip">Canny(60,160) + silhouette + distance</span>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num">3</div><div class="body">
+        <h4>Condition G on (structure, label, noise)</h4>
+        <p>The structure map is fed <i>into</i> the generator as a conditioning input — it tells G the exact
+           hand shape to render, so noise only controls style.</p>
+        <span class="chip">G([structure, label, z]) → fake</span>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num">4</div><div class="body">
+        <h4>Use a PAIRED discriminator</h4>
+        <p>D judges <code>(image, structure, label)</code> triples — "does this image match <i>this</i>
+           structure and label?" — pix2pix-style conditional adversarial supervision.</p>
+        <span class="chip">D([image, structure, label]) → logit</span>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num">5</div><div class="body">
+        <h4>Train — the target is the SAME image as the structure</h4>
+        <p>Because the conditioning map and the real target come from one image, correspondence is restored.
+           There is no class-mean to regress toward → diversity climbs (≈0.33 vs ≈0.11 for A).</p>
+      </div>
+    </div>
+    <div class="step C">
+      <div class="num">6</div><div class="body">
+        <h4>Held-out structure test — does it generalize?</h4>
+        <p>Feed C structure maps from 250 images it never trained on: recognition stays <b>0.93</b>
+           (gap of just <b>0.024</b> vs training structures) at <b>SSIM 0.95</b> to the true target — it learned
+           the structure→image mapping, it did not memorize.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Model C conditioning flow (the core idea)</h3>
+  <div class="flow">
+    <span class="node cond">structure map (edge+sil+dist)</span><span class="arrow">+</span>
+    <span class="node gen">label + z</span><span class="arrow">→</span>
+    <span class="node gen">G</span><span class="arrow">→</span>
+    <span class="node out">fake</span><span class="arrow">→</span>
+    <span class="node dis">paired D(img, structure, label)</span>
+  </div>
+
+  <div class="note">
+    <b>Want the deeper walkthrough?</b> See the dedicated
+    <a href="model-C-validation.html">Model C — steps &amp; how to validate before full training</a> page,
+    the <a href="../reports/">prior-art search + verdict</a>, and the
+    <a href="../experiments/">raw local runs</a>.
+  </div>
+</div></section>
+
 <!-- LOSSES -->
 <section id="losses"><div class="wrap">
   <h2><span class="dot" style="background:var(--c)"></span>The Loss Functions</h2>
@@ -378,41 +474,74 @@ G_total = <span class="lab">g_adv</span>
         − 0.05 · <span class="lab">variance(fake)</span>   <span style="color:var(--soft)"># "diversity" term</span>
   </div>
 
+  <h3>Model C — Generator objective</h3>
+  <div class="eq">
+fake    = G(<span class="lab">structure</span>, label, z)
+G_total = <span class="lab">g_adv( D(fake, structure, label) )</span>   <span style="color:var(--soft)"># conditioning + target come from the SAME image → aligned, no class-mean</span>
+  </div>
+
   <table>
-    <tr><th>Term</th><th>Purpose</th><th>A</th><th>B</th></tr>
-    <tr><td>Adversarial (BCE vs D)</td><td>Make images look real for the class</td><td class="ok">✓</td><td class="ok">✓</td></tr>
-    <tr><td>Pixel L1</td><td>Anchor coarse structure to real images</td><td class="ok">✓</td><td class="ok">✓</td></tr>
-    <tr><td>Landmark MSE</td><td>Guide hand-joint geometry</td><td class="no">✕</td><td class="ok">✓</td></tr>
-    <tr><td>Variance term</td><td>Labelled "diversity" (see notes)</td><td class="no">✕</td><td class="ok">✓</td></tr>
+    <tr><th>Term</th><th>Purpose</th><th>A</th><th>B</th><th>C</th></tr>
+    <tr><td>Adversarial (BCE vs D)</td><td>Make images look real for the class</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+    <tr><td>Pixel L1 (unaligned target)</td><td>Anchor coarse structure to real images</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✕</td></tr>
+    <tr><td>Landmark MSE</td><td>Guide hand-joint geometry</td><td class="no">✕</td><td class="ok">✓</td><td class="no">✕</td></tr>
+    <tr><td>Variance term</td><td>Labelled "diversity" (see notes)</td><td class="no">✕</td><td class="ok">✓</td><td class="no">✕</td></tr>
+    <tr><td>Structure conditioning (input)</td><td>Tell G the exact hand shape; aligned target</td><td class="no">✕</td><td class="no">✕</td><td class="ok">✓</td></tr>
+    <tr><td>Paired (img, struct, label) D</td><td>Judge image against its own structure</td><td class="no">✕</td><td class="no">✕</td><td class="ok">✓</td></tr>
   </table>
 </div></section>
 
 <!-- COMPARE -->
 <section id="compare"><div class="wrap">
-  <h2><span class="dot" style="background:var(--p)"></span>Model A vs Model B at a glance</h2>
+  <h2><span class="dot" style="background:var(--p)"></span>Model A vs B vs C at a glance</h2>
   <table>
-    <tr><th>Aspect</th><th>Model A</th><th>Model B</th></tr>
-    <tr><td>Image size</td><td>128×128</td><td>128×128</td></tr>
-    <tr><td>Backbone (G/D)</td><td>SAGAN cGAN + spectral norm</td><td>Identical</td></tr>
-    <tr><td>Structural supervision</td><td>Pixel L1 only</td><td>Pixel L1 + landmark MSE</td></tr>
-    <tr><td>External dependency</td><td>None</td><td>MediaPipe Hands</td></tr>
-    <tr><td>Extra trained module</td><td>—</td><td>Frozen landmark regressor</td></tr>
-    <tr><td>λ schedules</td><td>1 (pixel)</td><td>2 (pixel + landmark)</td></tr>
-    <tr><td>Evaluation extras</td><td>FID, SSIM, LPIPS, diversity</td><td>+ PKLE (landmark error)</td></tr>
+    <tr><th>Aspect</th><th>Model A</th><th>Model B</th><th>Model C</th></tr>
+    <tr><td>Image size</td><td>128×128</td><td>128×128</td><td>128×128</td></tr>
+    <tr><td>Backbone (G/D)</td><td>SAGAN cGAN + spectral norm</td><td>Identical</td><td>Identical + structure input &amp; paired D</td></tr>
+    <tr><td>Conditioned on</td><td>Class label</td><td>Class label</td><td>Class label <b>+ per-image structure map</b></td></tr>
+    <tr><td>Structural supervision</td><td>Pixel L1 (unaligned)</td><td>Pixel L1 + landmark MSE (unaligned)</td><td>Adversarial + paired (aligned)</td></tr>
+    <tr><td>Target alignment</td><td class="no">Unaligned → class-mean</td><td class="no">Unaligned → class-mean</td><td class="ok">Same image → aligned</td></tr>
+    <tr><td>External dependency</td><td>None</td><td>MediaPipe Hands</td><td>OpenCV (Canny / distance transform)</td></tr>
+    <tr><td>Extra trained module</td><td>—</td><td>Frozen landmark regressor</td><td>—</td></tr>
+    <tr><td>λ schedules</td><td>1 (pixel)</td><td>2 (pixel + landmark)</td><td>0 (no structural loss term)</td></tr>
+    <tr><td>Evaluation extras</td><td>FID, SSIM, LPIPS, diversity</td><td>+ PKLE (landmark error)</td><td>+ GAN-test/train, held-out structure test</td></tr>
   </table>
+</div></section>
+
+<!-- RESULTS -->
+<section id="results"><div class="wrap">
+  <h2><span class="dot" style="background:var(--c)"></span>Results at a glance (local 5K run)</h2>
+  <p class="lead">Reduced CPU run — 10 classes, 4,750 train / 250 held-out, 64×64, 6 epochs
+     (reference classifier on real = 0.956, chance = 0.10). Treat magnitudes as <b>directional</b>;
+     the ordering <b>C ≫ A ≈ B</b> is the signal.</p>
+  <table>
+    <tr><th>Model</th><th>GAN-test ↑</th><th>GAN-train ↑</th><th>Diversity ↑</th><th>Train time</th></tr>
+    <tr><td>A — no MediaPipe</td><td>0.447</td><td>0.144</td><td>0.105</td><td>432 s</td></tr>
+    <tr><td>B — MediaPipe landmark loss</td><td>0.547</td><td>0.232</td><td>0.125</td><td>372 s</td></tr>
+    <tr><td><b style="color:var(--c)">C — structure-conditioned</b></td><td class="ok">0.947</td><td>0.204</td><td class="ok">0.330</td><td>889 s</td></tr>
+  </table>
+  <p style="color:var(--muted); font-size:.92rem">
+    <b>GAN-test</b> = classifier trained on real, tested on generated (recognizability).
+    <b>GAN-train</b> = classifier trained on generated, tested on real (usefulness as data).
+    B's MediaPipe detection was only <b>2.06%</b> at 64px, so its landmark loss was masked out for ~98% of
+    samples. Raw runs + the held-out structure test live in <a href="../experiments/">experiments/</a>.
+  </p>
 </div></section>
 
 <!-- EVAL -->
 <section id="eval"><div class="wrap">
   <h2><span class="dot" style="background:var(--b)"></span>Evaluation Suite</h2>
-  <p class="lead">Both notebooks generate balanced samples per class and score them.</p>
+  <p class="lead">The notebooks generate balanced samples per class and score them.</p>
   <table>
     <tr><th>Metric</th><th>What it measures</th><th>Better</th></tr>
     <tr><td>FID</td><td>Distance between real &amp; generated feature distributions</td><td>lower</td></tr>
     <tr><td>SSIM</td><td>Structural similarity to a real sample</td><td>higher</td></tr>
     <tr><td>LPIPS</td><td>Perceptual distance (VGG features)</td><td>lower</td></tr>
     <tr><td>Diversity</td><td>Intra-class L1 spread of generated samples</td><td>higher</td></tr>
+    <tr><td>GAN-test</td><td>Classifier trained on real, tested on generated (recognizability)</td><td>higher</td></tr>
+    <tr><td>GAN-train</td><td>Classifier trained on generated, tested on real (usefulness as data)</td><td>higher</td></tr>
     <tr><td>PKLE <span class="chip">B only</span></td><td>Landmark MSE between real &amp; generated hands</td><td>lower</td></tr>
+    <tr><td>Held-out structure test <span class="chip">C only</span></td><td>Recognition/SSIM on structures never seen in training</td><td>higher</td></tr>
   </table>
 </div></section>
 
@@ -443,15 +572,17 @@ G_total = <span class="lab">g_adv</span>
     generated) would be more meaningful.
   </div>
   <div class="note">
-    <b>Recommended direction.</b> Use structure (landmarks <i>or</i> always-available edge/silhouette maps) as a
-    per-image <b>conditioning input</b> rather than a loss against unaligned targets — i.e. pix2pix /
-    landmark-conditioned diffusion. That restores correspondence and removes the regress-to-mean problem.
+    <b>Recommended direction — and what Model C does.</b> Use structure (always-available edge/silhouette maps)
+    as a per-image <b>conditioning input</b> rather than a loss against unaligned targets — i.e. pix2pix /
+    structure-conditioned diffusion. That restores correspondence and removes the regress-to-mean problem.
+    <b>Model C is exactly this</b>, and it wins the local A/B/C run decisively
+    (<a href="#results">GAN-test 0.95 vs ~0.5</a>).
   </div>
 </div></section>
 
 <footer>
   <div class="wrap">
-    ArASL cGAN walkthrough · Model A (no MediaPipe) &amp; Model B (MediaPipe) · 128×128 · 32 classes<br/>
+    ArASL cGAN walkthrough · Model A (no MediaPipe) · Model B (MediaPipe) · Model C (structure-conditioned) · 128×128 · 32 classes<br/>
     Generated as project documentation — see <code>README.md</code> and the notebooks under <code>notebooks/</code>.
   </div>
 </footer>

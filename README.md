@@ -13,7 +13,7 @@ everything.
 |-------|----------|----------------------|------------------------|------------------|
 | **A** | [`notebooks/model_A_cgan_128_no_mediapipe.ipynb`](notebooks/model_A_cgan_128_no_mediapipe.ipynb) | Class label only | Pixel L1 to an unaligned target | — |
 | **B** | [`notebooks/model_B_cgan_128_mediapipe.ipynb`](notebooks/model_B_cgan_128_mediapipe.ipynb) | Class label only | Pixel L1 **+** MediaPipe landmark MSE | MediaPipe Hands |
-| **C** | [`notebooks/model_comparison_ABC.ipynb`](notebooks/model_comparison_ABC.ipynb) | Class label **+ per-image structure map** | Adversarial + paired (structure and target from the *same* image) | OpenCV (Canny/distance transform) |
+| **C** | [`notebooks/model_C_cgan_128_structure.ipynb`](notebooks/model_C_cgan_128_structure.ipynb) | Class label **+ per-image structure map** | Adversarial + paired (structure and target from the *same* image) | OpenCV (Canny/distance transform) |
 
 ### Shared backbone (A, B, C)
 
@@ -50,7 +50,8 @@ that the data simply doesn't support.
 ### Model C — structure-conditioned cGAN (the one that works)
 
 C changes the *conditioning*, not just the loss. For every image it computes a 3-channel
-**structure map** — **Canny edges + silhouette + distance transform** (see
+**structure map** — **Canny edges + silhouette + distance transform** (standalone notebook:
+[`notebooks/model_C_cgan_128_structure.ipynb`](notebooks/model_C_cgan_128_structure.ipynb); see also
 [`experiments/scripts/prep_data.py`](experiments/scripts/prep_data.py)) — and feeds that map
 to the generator **and** to a **paired discriminator** that judges `(image, structure, label)`
 triples. Crucially the structure map and the target come from the **same image**, restoring
@@ -81,7 +82,7 @@ an A-vs-B comparison, the evaluation suite, and honest engineering notes.
 .
 ├── README.md
 ├── docs/             # HTML walkthroughs (models, generator, optimizations, problems, Model C)
-├── notebooks/        # A, B, optimized A/B, and the A/B/C comparison notebooks
+├── notebooks/        # A, B, C standalone + optimized A/B + the A/B/C comparison notebook
 ├── src/              # optimized, modular reimplementation (config, models, data, training)
 ├── reports/          # literature search + Model C prior-art + verdict/opinion (HTML + md)
 ├── experiments/      # real local A/B/C runs
