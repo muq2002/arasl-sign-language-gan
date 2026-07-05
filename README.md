@@ -267,8 +267,12 @@ steps (ideally GPU). See [`reports/`](reports/) and [`experiments/`](experiments
 ## Dataset
 
 `ArASL_Database_54K_Final` — ~54,000 grayscale hand-sign images across 32 Arabic letter classes.
-Not included in this repo (see `.gitignore`); the notebooks expect it on Google Drive at
-`/content/drive/MyDrive/ArASL_Database_54K_Final/`.
+Not included in this repo (see `.gitignore`). Every notebook now **auto-downloads it from
+[`pain/ArASL_Database_Grayscale`](https://huggingface.co/datasets/pain/ArASL_Database_Grayscale)
+on Hugging Face** straight to local Colab disk (`/content/ArASL_Database_54K_Final`, ~30 MB,
+no account/token needed) — no manual Google Drive upload required. Google Drive is still
+mounted and used for `checkpoints/`, `samples/`, `eval/`, `history/`, and `plots/`, so training
+progress survives a Colab disconnect/reconnect.
 
 ## Evaluation
 
