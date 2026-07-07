@@ -11,10 +11,15 @@ KEY SPEED FIX (accuracy-neutral):
 """
 import cv2
 import numpy as np
-import mediapipe as mp
 
 from config import (MP_DETECT_SIZE, MP_DETECT_SIZE_FB, MP_CONFIDENCE,
                     MP_CONFIDENCE_LOW, MP_MODEL_COMPLEX)
+
+# NOTE: `mediapipe` is imported lazily (inside HandLandmarkExtractor.__init__)
+# so this module can be imported in the TensorFlow env — where mediapipe is NOT
+# installed (protobuf 4.x vs TF's protobuf 7.x conflict). With a warm landmark
+# cache, compute_landmarks() never constructs an extractor, so mediapipe is
+# never imported and training runs fine in the TF env.
 
 
 # ── colorization helpers (unchanged) ──────────────────────────────────────
@@ -67,6 +72,7 @@ class HandLandmarkExtractor:
     """
 
     def __init__(self):
+        import mediapipe as mp  # lazy: only needed when actually extracting
         H = mp.solutions.hands.Hands
         # one instance per confidence threshold, reused for all images
         self._hi = H(static_image_mode=True, max_num_hands=1,
@@ -125,10 +131,13 @@ def compute_landmarks(images, cache_path):
         lm = np.load(cache_path)
         if lm.shape == (n, 63):
             pct = lm.any(axis=1).mean() * 100
-            print(f"Cache loaded {lm.shape}  detections {pct:.1f}%")
-            if pct >= 20.0:
-                return lm
-            print("Stale cache (<20%) -> recomputing")
+            # A correctly-shaped cache is authoritative. On ArASL the true
+            # MediaPipe detection rate is ~2% (low-res grayscale signs), so the
+            # old <20% "stale -> recompute" heuristic would wrongly discard a
+            # valid cache and force a mediapipe import in the TF env. Trust it.
+            print(f"Cache loaded {lm.shape}  detections {pct:.1f}% (using cache)")
+            return lm
+        print(f"Cache shape {lm.shape} != {(n, 63)} -> recomputing")
         os.remove(cache_path)
 
     print(f"Extracting landmarks for {n:,} images (reused MediaPipe instances)...")

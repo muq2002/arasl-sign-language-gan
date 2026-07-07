@@ -33,3 +33,8 @@ experiments/results/*.log
 data/ArASL_dataset/
 data/samples/
 data/*.parquet
+
+# transient run/monitor artifacts
+*.out
+*.npy.progress
+reports/paper/logs/watch_*.sh

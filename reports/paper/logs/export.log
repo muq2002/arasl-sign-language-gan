@@ -1,0 +1,3 @@
+[A] exported -> /mnt/c/Users/MustafaJK/arasl-sign-language-gan/outputs/cgan_A_128/checkpoints/export
+[B] exported -> /mnt/c/Users/MustafaJK/arasl-sign-language-gan/outputs/cgan_B_128mp/checkpoints/export
+[C] exported -> /mnt/c/Users/MustafaJK/arasl-sign-language-gan/outputs/cgan_C_128struct/checkpoints/export

@@ -11,14 +11,14 @@ Speedups (accuracy-neutral): reused MediaPipe instances (huge for extraction),
 mixed precision + loss scaling, tf.data prefetch, in-graph one-hot, vectorized
 per-epoch target selection, optional XLA.
 """
-import os, json
+import os, json, time
 import numpy as np
 import tensorflow as tf
 
 import config as C
 from data import load_images, build_pipeline
 from models import build_generator, build_discriminator, build_landmark_regressor
-from train_utils import make_optimizer, apply_loss, set_lr
+from train_utils import make_optimizer, scaled, apply_grads, set_lr
 from mediapipe_utils import compute_landmarks
 
 
@@ -85,6 +85,11 @@ def train():
 
     ds, target_idx_var, selector = build_pipeline(
         images, labels_int, prototypes, num_classes, landmarks=landmarks)
+    # build_pipeline already copied images into the tf.data source constant, so
+    # the original 3.4 GB array is now dead weight -> free it (avoids OOM at 16 GB).
+    import gc
+    del images, landmarks
+    gc.collect()
 
     lam_pix_v = tf.Variable(get_lambda_pix(0), dtype=tf.float32, trainable=False)
     lam_lm_v  = tf.Variable(get_lambda_lm(0),  dtype=tf.float32, trainable=False)
@@ -112,7 +117,8 @@ def train():
             r = D([real, lbs], training=True)
             f = D([fake, lbs], training=True)
             d_loss = bce(tf.ones_like(r) * C.LABEL_SMOOTH, r) + bce(tf.zeros_like(f), f)
-        apply_loss(d_opt, d_loss, t, D.trainable_variables)
+            d_loss_s = scaled(d_opt, d_loss)
+        apply_grads(d_opt, t.gradient(d_loss_s, D.trainable_variables), D.trainable_variables)
         return d_loss
 
     @tf.function(jit_compile=C.USE_XLA)
@@ -129,11 +135,14 @@ def train():
             flat = tf.reshape(fake, [tf.shape(fake)[0], -1])
             div = -C.LAMBDA_DIV * tf.reduce_mean(tf.math.reduce_variance(flat, axis=1))
             g_loss = g_adv + lam_pix_v * g_pix + lam_lm_v * g_lm + div
-        apply_loss(g_opt, g_loss, t, G.trainable_variables)
+            g_loss_s = scaled(g_opt, g_loss)
+        apply_grads(g_opt, t.gradient(g_loss_s, G.trainable_variables), G.trainable_variables)
         return g_adv, g_pix, g_lm
 
     g_n = C.G_UPDATES_BASE
+    hist.setdefault("epoch_seconds", hist.get("epoch_seconds", []))
     for epoch in range(start_ep, C.EPOCHS):
+        _t0 = time.time()
         if epoch == C.LR_DECAY_D:
             set_lr(d_opt, C.LR_D / 2)
         if epoch == C.LR_DECAY_G:
@@ -158,10 +167,12 @@ def train():
         gd = gtm / max(dm, 0.01)
         for k, v in zip(keys, [dm, gam, gpm, glmm, gtm, gd, lp, ll]):
             hist[k].append(v)
+        _el = time.time() - _t0
+        hist["epoch_seconds"].append(round(_el, 1))
         phase = "P1" if epoch < C.PHASE2_EP else "P2"
         lmp = "LM-off" if ll == 0 else f"LM-on({ll:.2f})"
         print(f"Ep{epoch+1}/{C.EPOCHS} [{phase}][{lmp}] D={dm:.4f} Ga={gam:.4f} "
-              f"Gpix={gpm:.4f} Glm={glmm:.4f} Gt={gtm:.4f} G/D={gd:.2f}x nG={g_n}")
+              f"Gpix={gpm:.4f} Glm={glmm:.4f} Gt={gtm:.4f} G/D={gd:.2f}x nG={g_n} {_el:.1f}s", flush=True)
 
         g_n = (min(C.G_UPDATES_BASE + 2, 5) if gd > C.G_D_RATIO_MAX * 1.5
                else C.G_UPDATES_BASE + 1 if gd > C.G_D_RATIO_MAX

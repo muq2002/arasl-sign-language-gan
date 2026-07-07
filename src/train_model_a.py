@@ -11,14 +11,14 @@ Run on Colab:
     !python src/train_model_a.py
 or import train() from a notebook.
 """
-import os, json
+import os, json, time
 import numpy as np
 import tensorflow as tf
 
 import config as C
 from data import load_images, build_pipeline, AUTOTUNE
 from models import build_generator, build_discriminator
-from train_utils import make_optimizer, apply_loss, set_lr
+from train_utils import make_optimizer, scaled, apply_grads, set_lr
 
 
 def get_lambda(epoch):
@@ -71,7 +71,8 @@ def train():
             r = D([real, lbs], training=True)
             f = D([fake, lbs], training=True)
             d_loss = bce(tf.ones_like(r) * C.LABEL_SMOOTH, r) + bce(tf.zeros_like(f), f)
-        apply_loss(d_opt, d_loss, t, D.trainable_variables)
+            d_loss_s = scaled(d_opt, d_loss)
+        apply_grads(d_opt, t.gradient(d_loss_s, D.trainable_variables), D.trainable_variables)
         return d_loss
 
     @tf.function(jit_compile=C.USE_XLA)
@@ -83,11 +84,14 @@ def train():
             g_adv = bce(tf.ones_like(f), f)
             g_pix = tf.reduce_mean(tf.abs(fake - tgt))
             g_loss = g_adv + lam_v * g_pix
-        apply_loss(g_opt, g_loss, t, G.trainable_variables)
+            g_loss_s = scaled(g_opt, g_loss)
+        apply_grads(g_opt, t.gradient(g_loss_s, G.trainable_variables), G.trainable_variables)
         return g_adv, g_pix
 
     g_n = C.G_UPDATES_BASE
+    hist.setdefault("epoch_seconds", hist.get("epoch_seconds", []))
     for epoch in range(start_ep, C.EPOCHS):
+        _t0 = time.time()
         if epoch == C.LR_DECAY_D:
             set_lr(d_opt, C.LR_D / 2)
         if epoch == C.LR_DECAY_G:
@@ -112,9 +116,11 @@ def train():
         for k, v in zip(["d", "g_adv", "g_pixel", "g_total", "gd_ratio", "lam"],
                         [dm, gam, gpm, gtm, gd, lam]):
             hist[k].append(v)
+        _el = time.time() - _t0
+        hist["epoch_seconds"].append(round(_el, 1))
         phase = "P1" if epoch < C.PHASE2_EP else "P2"
         print(f"Ep{epoch+1}/{C.EPOCHS} [{phase}] D={dm:.4f} Ga={gam:.4f} "
-              f"Gp={gpm:.4f} Gt={gtm:.4f} G/D={gd:.2f}x lam={lam:.2f} nG={g_n}")
+              f"Gp={gpm:.4f} Gt={gtm:.4f} G/D={gd:.2f}x lam={lam:.2f} nG={g_n} {_el:.1f}s", flush=True)
 
         g_n = (min(C.G_UPDATES_BASE + 2, 5) if gd > C.G_D_RATIO_MAX * 1.5
                else C.G_UPDATES_BASE + 1 if gd > C.G_D_RATIO_MAX

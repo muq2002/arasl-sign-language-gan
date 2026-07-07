@@ -14,14 +14,27 @@ def make_optimizer(lr):
     return opt
 
 
-def apply_loss(opt, loss, tape, variables):
-    """Compute + apply gradients, with loss scaling when mixed precision is on."""
+def scaled(opt, loss):
+    """Scale the loss for mixed precision. MUST be called INSIDE the GradientTape
+    (Keras 3 LossScaleOptimizer.scale_loss records a dynamic-scale op the tape
+    needs to see). With MP off this is a no-op."""
+    return opt.scale_loss(loss) if USE_MIXED_PRECISION else loss
+
+
+def apply_grads(opt, grads, variables):
+    """Apply (already-computed) gradients. Keras 3 LossScaleOptimizer.apply()
+    unscales internally; a plain optimizer uses apply_gradients."""
     if USE_MIXED_PRECISION:
-        scaled = opt.get_scaled_loss(loss)
-        grads = opt.get_unscaled_gradients(tape.gradient(scaled, variables))
+        opt.apply(grads, variables)
     else:
-        grads = tape.gradient(loss, variables)
-    opt.apply_gradients(zip(grads, variables))
+        opt.apply_gradients(zip(grads, variables))
+
+
+def apply_loss(opt, loss, tape, variables):
+    """Deprecated: kept for compatibility. Prefer scaled()+apply_grads() so the
+    scale op is recorded inside the tape."""
+    grads = tape.gradient(scaled(opt, loss), variables)
+    apply_grads(opt, grads, variables)
 
 
 def set_lr(opt, lr):

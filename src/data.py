@@ -48,6 +48,18 @@ def load_images(data_path=DATA_PATH):
             except Exception:
                 errs += 1
     images = np.asarray(imgs, dtype=np.float32)
+    # optional subsample for quick smoke tests (per-class cap, keeps all classes)
+    _cap = int(os.environ.get("ARASL_MAX_PER_CLASS", 0))
+    if _cap > 0:
+        labs_arr = np.asarray(labs)
+        keep = []
+        for c in np.unique(labs_arr):
+            idx = np.where(labs_arr == c)[0][:_cap]
+            keep.extend(idx.tolist())
+        keep = np.array(sorted(keep))
+        images = images[keep]
+        labs = [labs[i] for i in keep]
+        print(f"[smoke] subsampled to {len(images)} images ({_cap}/class)")
     enc = LabelEncoder()
     labels_int = enc.fit_transform(np.asarray(labs)).astype(np.int64)
     num_classes = len(enc.classes_)

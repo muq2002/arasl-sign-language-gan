@@ -16,12 +16,19 @@ USE_XLA             = False   # jit_compile train steps. Big speedup; enable if 
 TF_DATA_PREFETCH    = True    # overlap host->device copies with compute
 
 # ──────────────────────────────────────────────────────────────────────────
-#  PATHS  (edit for your environment — defaults match the Colab notebooks)
+#  PATHS  (repo-relative so every artifact stays inside the cloned repo)
 # ──────────────────────────────────────────────────────────────────────────
-DATA_PATH = "/content/drive/MyDrive/ArASL_Database_54K_Final/ArASL_Database_54K_Final"
+# src/config.py -> repo root is one level up
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# allow override from the environment (e.g. a faster WSL-native path)
+_OUT = os.environ.get("ARASL_OUT", os.path.join(_REPO_ROOT, "outputs"))
 
-DRIVE_BASE_A = "/content/drive/MyDrive/cgan_A_128"
-DRIVE_BASE_B = "/content/drive/MyDrive/cgan_B_128mp"
+DATA_PATH = os.environ.get("ARASL_DATA",
+                           os.path.join(_REPO_ROOT, "data", "ArASL_dataset"))
+
+DRIVE_BASE_A = os.path.join(_OUT, "cgan_A_128")
+DRIVE_BASE_B = os.path.join(_OUT, "cgan_B_128mp")
+DRIVE_BASE_C = os.path.join(_OUT, "cgan_C_128struct")
 
 # ──────────────────────────────────────────────────────────────────────────
 #  ARCHITECTURE
@@ -34,8 +41,8 @@ RANDOM_SEED  = 42
 # ──────────────────────────────────────────────────────────────────────────
 #  TRAINING
 # ──────────────────────────────────────────────────────────────────────────
-EPOCHS       = 50
-BATCH_SIZE   = 32
+EPOCHS       = int(os.environ.get("ARASL_EPOCHS", 50))   # override for smoke tests
+BATCH_SIZE   = int(os.environ.get("ARASL_BATCH", 32))
 LR_G         = 2e-4
 LR_D         = 1e-4
 LR_DECAY_G   = 35

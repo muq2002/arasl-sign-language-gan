@@ -1,0 +1,103 @@
+Mixed precision: mixed_float16 enabled
+XLA jit_compile: OFF  |  GPUs: ['/physical_device:GPU:0']
+Loading from /mnt/c/Users/MustafaJK/arasl-sign-language-gan/data/ArASL_dataset (resize 128x128)
+Classes:   0%|          | 0/33 [00:00<?, ?it/s]Classes:   6%|▌         | 2/33 [00:05<01:27,  2.81s/it]Classes:   9%|▉         | 3/33 [00:09<01:35,  3.18s/it]Classes:  12%|█▏        | 4/33 [00:14<01:49,  3.78s/it]Classes:  15%|█▌        | 5/33 [00:19<01:56,  4.17s/it]Classes:  18%|█▊        | 6/33 [00:23<01:56,  4.30s/it]Classes:  21%|██        | 7/33 [00:29<02:03,  4.73s/it]Classes:  24%|██▍       | 8/33 [00:33<01:57,  4.69s/it]Classes:  27%|██▋       | 9/33 [00:39<01:59,  4.99s/it]Classes:  30%|███       | 10/33 [00:44<01:52,  4.91s/it]Classes:  33%|███▎      | 11/33 [00:49<01:51,  5.06s/it]Classes:  36%|███▋      | 12/33 [00:53<01:41,  4.81s/it]Classes:  39%|███▉      | 13/33 [00:58<01:33,  4.69s/it]Classes:  42%|████▏     | 14/33 [01:02<01:26,  4.57s/it]Classes:  45%|████▌     | 15/33 [01:07<01:24,  4.72s/it]Classes:  48%|████▊     | 16/33 [01:12<01:18,  4.63s/it]Classes:  52%|█████▏    | 17/33 [01:16<01:14,  4.65s/it]Classes:  55%|█████▍    | 18/33 [01:21<01:11,  4.74s/it]Classes:  58%|█████▊    | 19/33 [01:26<01:06,  4.79s/it]Classes:  61%|██████    | 20/33 [01:31<01:04,  4.97s/it]WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1783357584.151895     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783357584.154412     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783357584.157081     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783357584.160033     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783357584.162876     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783357584.171056     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783357584.173935     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  64%|██████▎   | 21/33 [01:37<01:00,  5.02s/it]Classes:  67%|██████▋   | 22/33 [01:42<00:55,  5.05s/it]W0000 00:00:1783357595.008971     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  70%|██████▉   | 23/33 [01:46<00:48,  4.87s/it]Classes:  73%|███████▎  | 24/33 [01:50<00:41,  4.64s/it]Classes:  76%|███████▌  | 25/33 [01:55<00:37,  4.73s/it]Classes:  79%|███████▉  | 26/33 [02:00<00:33,  4.82s/it]Classes:  82%|████████▏ | 27/33 [02:05<00:28,  4.82s/it]Classes:  85%|████████▍ | 28/33 [02:09<00:23,  4.67s/it]W0000 00:00:1783357620.071406     426 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  88%|████████▊ | 29/33 [02:14<00:19,  4.79s/it]Classes:  91%|█████████ | 30/33 [02:18<00:13,  4.51s/it]Classes:  94%|█████████▍| 31/33 [02:23<00:09,  4.59s/it]Classes:  97%|█████████▋| 32/33 [02:27<00:04,  4.30s/it]Classes: 100%|██████████| 33/33 [02:31<00:00,  4.18s/it]Classes: 100%|██████████| 33/33 [02:31<00:00,  4.58s/it]
+Loaded 54049 images, 0 errors, 32 classes
+G params 5,204,642 | D params 7,500,673
+W0000 00:00:1783357646.520213     426 cpu_allocator_impl.cc:82] Allocation of 3544252416 exceeds 10% of free system memory.
+W0000 00:00:1783357660.903875     426 cpu_allocator_impl.cc:82] Allocation of 3544252416 exceeds 10% of free system memory.
+Resumed from epoch 50
+Training complete.
+WARNING:tensorflow:Detecting that an object or model or tf.train.Checkpoint is being deleted with unrestored values. See the following logs for the specific values in question. To silence these warnings, use `status.expect_partial()`. See https://www.tensorflow.org/api_docs/python/tf/train/Checkpoint#restorefor details about the status object returned by the restore function.
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.step_counter
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.dynamic_scale
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.step_counter
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.dynamic_scale
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.2
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.3
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.4
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.5
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.6
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.7
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.8
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.9
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.10
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.11
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.12
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.13
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.14
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.15
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.16
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.17
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.18
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.19
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.20
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.21
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.22
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.23
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.24
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.25
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.26
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.27
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.28
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).d_opt.inner_optimizer._variables.29
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.2
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.3
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.4
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.5
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.6
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.7
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.8
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.9
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.10
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.11
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.12
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.13
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.14
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.15
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.16
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.17
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.18
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.19
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.20
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.21
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.22
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.23
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.24
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.25
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.26
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.27
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.28
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.29
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.30
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.31
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.32
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.33
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.34
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.35
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.36
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.37
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.38
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.39
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.40
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.41
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.42
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.43
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.44
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.45
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.46
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.47
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.48
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.49
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.50
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).g_opt.inner_optimizer._variables.51
