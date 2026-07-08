@@ -1,0 +1,44 @@
+Loading from /mnt/c/Users/MustafaJK/arasl-sign-language-gan/data/ArASL_dataset (resize 128x128)
+Classes:   0%|          | 0/33 [00:00<?, ?it/s]Classes:   6%|▌         | 2/33 [00:06<01:36,  3.11s/it]Classes:   9%|▉         | 3/33 [00:09<01:40,  3.36s/it]Classes:  12%|█▏        | 4/33 [00:14<01:51,  3.85s/it]Classes:  15%|█▌        | 5/33 [00:20<02:03,  4.41s/it]Classes:  18%|█▊        | 6/33 [00:25<02:04,  4.60s/it]Classes:  21%|██        | 7/33 [00:29<02:02,  4.70s/it]Classes:  24%|██▍       | 8/33 [00:34<01:58,  4.72s/it]Classes:  27%|██▋       | 9/33 [00:40<01:59,  4.99s/it]Classes:  30%|███       | 10/33 [00:45<01:54,  4.96s/it]Classes:  33%|███▎      | 11/33 [00:50<01:53,  5.15s/it]Classes:  36%|███▋      | 12/33 [00:55<01:45,  5.04s/it]Classes:  39%|███▉      | 13/33 [01:00<01:38,  4.90s/it]Classes:  42%|████▏     | 14/33 [01:04<01:29,  4.72s/it]Classes:  45%|████▌     | 15/33 [01:09<01:26,  4.82s/it]Classes:  48%|████▊     | 16/33 [01:14<01:21,  4.78s/it]Classes:  52%|█████▏    | 17/33 [01:19<01:17,  4.83s/it]Classes:  55%|█████▍    | 18/33 [01:24<01:14,  4.93s/it]Classes:  58%|█████▊    | 19/33 [01:29<01:10,  5.01s/it]Classes:  61%|██████    | 20/33 [01:34<01:04,  4.99s/it]WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1783448322.364473     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783448322.367895     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783448322.371006     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783448322.374284     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783448322.377382     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783448322.386149     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783448322.389260     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  64%|██████▎   | 21/33 [01:39<00:59,  4.92s/it]Classes:  67%|██████▋   | 22/33 [01:44<00:56,  5.10s/it]W0000 00:00:1783448333.834969     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  70%|██████▉   | 23/33 [01:49<00:49,  4.95s/it]Classes:  73%|███████▎  | 24/33 [01:53<00:42,  4.74s/it]Classes:  76%|███████▌  | 25/33 [01:58<00:38,  4.83s/it]Classes:  79%|███████▉  | 26/33 [02:05<00:37,  5.37s/it]Classes:  82%|████████▏ | 27/33 [02:10<00:31,  5.28s/it]Classes:  85%|████████▍ | 28/33 [02:14<00:25,  5.05s/it]W0000 00:00:1783448361.184073     417 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  88%|████████▊ | 29/33 [02:19<00:20,  5.02s/it]Classes:  91%|█████████ | 30/33 [02:23<00:13,  4.65s/it]Classes:  94%|█████████▍| 31/33 [02:28<00:09,  4.67s/it]Classes:  97%|█████████▋| 32/33 [02:32<00:04,  4.47s/it]Classes: 100%|██████████| 33/33 [02:36<00:00,  4.35s/it]Classes: 100%|██████████| 33/33 [02:36<00:00,  4.74s/it]
+Loaded 54049 images, 0 errors, 32 classes
+W0000 00:00:1783448386.233708     417 cpu_allocator_impl.cc:82] Allocation of 3187998720 exceeds 10% of free system memory.
+W0000 00:00:1783448388.951879     417 cpu_allocator_impl.cc:82] Allocation of 3187998720 exceeds 10% of free system memory.
+Epoch 1/12
+761/761 - 51s - 67ms/step - accuracy: 0.6322 - loss: 1.3691 - val_accuracy: 0.8701 - val_loss: 0.4330
+Epoch 2/12
+761/761 - 32s - 42ms/step - accuracy: 0.9139 - loss: 0.2916 - val_accuracy: 0.9212 - val_loss: 0.2868
+Epoch 3/12
+761/761 - 32s - 42ms/step - accuracy: 0.9501 - loss: 0.1713 - val_accuracy: 0.9643 - val_loss: 0.1366
+Epoch 4/12
+761/761 - 32s - 42ms/step - accuracy: 0.9619 - loss: 0.1272 - val_accuracy: 0.9604 - val_loss: 0.1454
+Epoch 5/12
+761/761 - 32s - 41ms/step - accuracy: 0.9676 - loss: 0.1064 - val_accuracy: 0.9634 - val_loss: 0.1361
+Epoch 6/12
+761/761 - 32s - 41ms/step - accuracy: 0.9728 - loss: 0.0865 - val_accuracy: 0.9713 - val_loss: 0.1060
+Epoch 7/12
+761/761 - 32s - 42ms/step - accuracy: 0.9780 - loss: 0.0681 - val_accuracy: 0.9750 - val_loss: 0.0998
+Epoch 8/12
+761/761 - 32s - 42ms/step - accuracy: 0.9821 - loss: 0.0563 - val_accuracy: 0.9658 - val_loss: 0.1352
+Epoch 9/12
+761/761 - 41s - 54ms/step - accuracy: 0.9838 - loss: 0.0505 - val_accuracy: 0.9648 - val_loss: 0.1324
+Epoch 10/12
+761/761 - 33s - 43ms/step - accuracy: 0.9826 - loss: 0.0544 - val_accuracy: 0.9621 - val_loss: 0.1410
+Epoch 11/12
+761/761 - 32s - 42ms/step - accuracy: 0.9853 - loss: 0.0480 - val_accuracy: 0.9728 - val_loss: 0.1217
+Epoch 12/12
+761/761 - 33s - 43ms/step - accuracy: 0.9879 - loss: 0.0375 - val_accuracy: 0.9732 - val_loss: 0.1255
+[A] recognition=0.641  worst: [(np.str_('gaaf'), 0.2), (np.str_('khaa'), 0.2), (np.str_('zay'), 0.267)]  top confusion: (np.str_('ghain'), np.str_('ain'), 0.45)
+[B] recognition=0.657  worst: [(np.str_('khaa'), 0.3), (np.str_('thal'), 0.333), (np.str_('gaaf'), 0.367)]  top confusion: (np.str_('khaa'), np.str_('haa'), 0.483)
+[C] recognition=0.758  worst: [(np.str_('ha'), 0.45), (np.str_('gaaf'), 0.533), (np.str_('aleff'), 0.567)]  top confusion: (np.str_('khaa'), np.str_('haa'), 0.183)
+[F] recognition=0.870  worst: [(np.str_('aleff'), 0.75), (np.str_('dha'), 0.767), (np.str_('zay'), 0.767)]  top confusion: (np.str_('dha'), np.str_('ta'), 0.117)
+wrote /mnt/c/Users/MustafaJK/arasl-sign-language-gan/reports/paper/results/confusion_summary.json

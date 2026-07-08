@@ -26,7 +26,8 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES_DIR = os.path.join(REPO, "reports", "paper", "results")
 os.makedirs(RES_DIR, exist_ok=True)
 
-RUNS = {"A": C.DRIVE_BASE_A, "B": C.DRIVE_BASE_B, "C": C.DRIVE_BASE_C}
+RUNS = {"A": C.DRIVE_BASE_A, "B": C.DRIVE_BASE_B, "C": C.DRIVE_BASE_C,
+        "F": C.DRIVE_BASE_F, "G": C.DRIVE_BASE_G}
 N_PER_CLASS = 40
 
 
@@ -44,9 +45,12 @@ def build_classifier(num_classes):
 def _load_gen(base):
     kpath = os.path.join(base, "checkpoints", "export", "generator.keras")
     if not os.path.exists(kpath):
-        return None
-    return tf.keras.models.load_model(kpath, compile=False,
-                                      custom_objects={"SelfAttention2D": SelfAttention2D})
+        return None, False
+    G = tf.keras.models.load_model(kpath, compile=False,
+                                   custom_objects={"SelfAttention2D": SelfAttention2D})
+    cfgp = os.path.join(base, "checkpoints", "export", "inference_config.json")
+    structure = json.load(open(cfgp)).get("conditioned_on_structure", False) if os.path.exists(cfgp) else False
+    return G, structure
 
 
 def main():
@@ -67,16 +71,16 @@ def main():
     # structure maps for C conditioning
     C_tr = None
 
-    def gen_samples(G, kind, n_per=N_PER_CLASS, seed=0):
+    def gen_samples(G, structure, n_per=N_PER_CLASS, seed=0):
         nonlocal C_tr
         tf.random.set_seed(seed)
         outs, ys = [], []
         for c in range(num_classes):
             oh = tf.one_hot(np.full(n_per, c), num_classes)
             nz = tf.random.normal([n_per, Z_DIM], seed=seed * 100 + c)
-            if kind == "C":
+            if structure:
                 if C_tr is None:
-                    print("building structure maps for C eval...")
+                    print("building structure maps for eval...")
                     C_tr = np.stack([structure_map(x) for x in tqdm(X_tr)]).astype(np.float32)
                 pool = np.where(y_tr == c)[0]
                 idx = np.random.default_rng(seed + c).choice(pool, n_per)
@@ -98,19 +102,19 @@ def main():
 
     per_model = {}
     for k, base in RUNS.items():
-        G = _load_gen(base)
+        G, structure = _load_gen(base)
         if G is None:
             print(f"[{k}] not exported - skipping"); continue
-        fakes, ys = gen_samples(G, k)
+        fakes, ys = gen_samples(G, structure)
         pred = clf.predict(fakes, verbose=0).argmax(1)
         rec = float((pred == ys).mean())
         div = diversity(fakes)
         entry = {"recognition": round(rec, 4), "diversity": round(div, 4), "ssim": None}
         print(f"[{k}] recognition={rec:.4f} diversity={div:.4f}")
 
-        if k == "C":
-            # defensive: never let the C-only SSIM/held-out block lose the
-            # already-computed A/B/C recognition+diversity numbers.
+        if structure:
+            # defensive: never let the structure-only SSIM/held-out block lose the
+            # already-computed recognition+diversity numbers.
             try:
                 from skimage.metrics import structural_similarity as ssim_fn
                 C_ev = np.stack([structure_map(x) for x in X_ev]).astype(np.float32)
@@ -131,9 +135,9 @@ def main():
                 entry["ssim"] = round(ss, 4)
                 entry["heldout_recognition"] = round(rec_ho, 4)
                 entry["generalization_gap"] = round(rec - rec_ho, 4)
-                print(f"[C] held-out recog={rec_ho:.4f} gap={rec-rec_ho:.4f} ssim={ss:.4f}")
+                print(f"[{k}] held-out recog={rec_ho:.4f} gap={rec-rec_ho:.4f} ssim={ss:.4f}")
             except Exception as e:
-                print(f"[C] SSIM/held-out block failed ({e}); keeping recognition+diversity")
+                print(f"[{k}] SSIM/held-out block failed ({e}); keeping recognition+diversity")
         per_model[k] = entry
 
     out = {"reference_classifier_on_real": round(ref_acc, 4),

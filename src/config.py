@@ -29,6 +29,8 @@ DATA_PATH = os.environ.get("ARASL_DATA",
 DRIVE_BASE_A = os.path.join(_OUT, "cgan_A_128")
 DRIVE_BASE_B = os.path.join(_OUT, "cgan_B_128mp")
 DRIVE_BASE_C = os.path.join(_OUT, "cgan_C_128struct")
+DRIVE_BASE_F = os.path.join(_OUT, "cgan_F_128fusion")   # Model F = C structure + B landmark loss
+DRIVE_BASE_G = os.path.join(_OUT, "cgan_G_128plus")     # Model G = F + aux-clf + feature-match + EMA
 
 # ──────────────────────────────────────────────────────────────────────────
 #  ARCHITECTURE
