@@ -235,6 +235,30 @@ L1-upgraded landmark term, and generator weight EMA — engineered to fit 8 GB. 
 the best model at 94.6% recognition**, closing ~72% of F's remaining gap to the
 **97.5%** real-image ceiling while *increasing* diversity.
 
+### Results summary (128px, all five models — one comparable run)
+
+GAN-test recognition = a classifier trained on **real** images, tested on generated
+samples. Reference classifier on real held-out = **0.9752** (the ceiling).
+
+| Model | Conditioning / added signal | Recognition ↑ | Diversity ↑ | SSIM ↑ | Held-out | Gap |
+|-------|-----------------------------|:---:|:---:|:---:|:---:|:---:|
+| A | label only, pixel L1 | 0.6367 | 0.178 | — | — | — |
+| B | + MediaPipe landmark loss | 0.6625 | 0.193 | — | — | — |
+| C | structure-conditioned cGAN | 0.7609 | 0.414 | 0.752 | 0.742 | 0.019 |
+| F | C + landmark fusion | 0.8719 | 0.372 | 0.825 | 0.854 | 0.018 |
+| **G** | **F + recognition + feature-match + EMA** | **0.9461** | **0.401** | 0.825 | 0.906 | 0.040 |
+
+**Takeaways.** (1) Conditioning is the axis that matters: the label-only models (A/B)
+stall near 0.64–0.66; switching to structure conditioning with an aligned target (C)
+jumps to 0.76. (2) The landmark-fusion term (F) is the biggest single gain (+0.11).
+(3) **Model G is the best model — 0.946 recognition (+0.074 over F)**, closing ~72% of
+F's remaining gap to the real-image ceiling *and increasing* diversity (no AC-GAN
+collapse). Its residual ~3-point gap to real is texture fidelity (SSIM flat at 0.825)
+plus intrinsic letter ambiguity — G has no weak class left (worst = `aleff` at 0.83),
+with errors diffuse and a small persistent `→ kaaf` confusion cluster.
+Full metrics: [`reports/paper/results/metrics.json`](reports/paper/results/metrics.json);
+per-class heatmaps: [`reports/paper/results/`](reports/paper/results/).
+
 - 📄 **[`reports/paper/model_G.md`](reports/paper/model_G.md)** — Model G deep-dive (design rationale, loss, memory)
 - 📇 **[`reports/paper/model_cards.md`](reports/paper/model_cards.md)** — per-model cards + results table
 - 📝 **[`reports/paper/paper.md`](reports/paper/paper.md)** — paper-ready scaffold
