@@ -1,0 +1,6 @@
+{
+  "Z_DIM": 128,
+  "IMG_SIZE": 128,
+  "num_classes": 32,
+  "conditioned_on_structure": false
+}

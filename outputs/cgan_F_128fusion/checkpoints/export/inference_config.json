@@ -1,0 +1,8 @@
+{
+  "Z_DIM": 128,
+  "IMG_SIZE": 128,
+  "COND_CH": 3,
+  "num_classes": 32,
+  "conditioned_on_structure": true,
+  "landmark_loss": true
+}
