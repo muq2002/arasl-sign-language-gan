@@ -12,15 +12,16 @@ We study conditional image generation for the **Arabic Alphabet Sign Language
 generator is conditioned and supervised* — not its capacity — determines whether
 its samples are recognizable. We build five models on a shared 128×128 backbone.
 A label-only cGAN with pixel L1 (**A**) and its MediaPipe-landmark variant (**B**)
-plateau near **62–64%** GAN-test recognition because their pixel target is
+plateau near **64–66%** GAN-test recognition because their pixel target is
 *unaligned* (regress-to-mean) and MediaPipe barely detects low-resolution
 grayscale hands. Conditioning instead on a per-image **structure map** (Canny +
 silhouette + distance transform) with an *aligned* target (**C**) raises
-recognition to **73.8%**; adding a frozen-landmark consistency loss (**F**) reaches
-**86.2%**. Finally, **Model G** augments F with an auxiliary-classifier recognition
+recognition to **76.1%**; adding a frozen-landmark consistency loss (**F**) reaches
+**87.2%**. Finally, **Model G** augments F with an auxiliary-classifier recognition
 loss, a pix2pixHD feature-matching loss, an L1-upgraded landmark term, and
-generator weight EMA, reaching **⟨G recognition⟩%** — approaching the **97.2%**
-real-image classifier ceiling. All full runs execute on a single 8 GB RTX 3050.
+generator weight EMA, reaching **94.6%** — approaching the **97.5%** real-image
+classifier ceiling and **increasing** sample diversity. All full runs execute on a
+single 8 GB RTX 3050.
 
 ## 1. Introduction
 
@@ -86,7 +87,7 @@ outside-the-tape memory design from §4.)*
 
 - Hardware: single RTX 3050 (8 GB), WSL2, TensorFlow 2.21, mixed_float16.
 - Evaluation (`src/paper_eval.py`): one reference classifier trained on real
-  held-out images (accuracy **0.9717**), applied to N=40 generations/class.
+  held-out images (accuracy **0.9752**), applied to N=40 generations/class.
   Metrics: **recognition** (GAN-test), intra-class **diversity**, **SSIM** to the
   aligned target, and a **held-out structure** generalization test (C/F/G).
 - Per-class **confusion** analysis (`src/confusion_matrix.py`).
@@ -94,16 +95,16 @@ outside-the-tape memory design from §4.)*
 
 ## 5. Results
 
-**Table 1.** GAN-test recognition and companions (128px full runs). Reference
-classifier on real = 0.9717.
+**Table 1.** GAN-test recognition and companions (128px full runs, single
+comparable run). Reference classifier on real = 0.9752.
 
 | Model | Recognition ↑ | Diversity ↑ | SSIM ↑ | Held-out recog. | Gen. gap |
 |-------|:---:|:---:|:---:|:---:|:---:|
-| A | 0.6156 | 0.1779 | — | — | — |
-| B | 0.6383 | 0.1926 | — | — | — |
-| C | 0.7383 | 0.4136 | 0.7517 | 0.7174 | 0.0208 |
-| F | 0.8617 | 0.3722 | 0.8249 | 0.8397 | 0.0220 |
-| **G** | **⟨…⟩** | ⟨…⟩ | ⟨…⟩ | ⟨…⟩ | ⟨…⟩ |
+| A | 0.6367 | 0.1779 | — | — | — |
+| B | 0.6625 | 0.1926 | — | — | — |
+| C | 0.7609 | 0.4136 | 0.7517 | 0.7415 | 0.0194 |
+| F | 0.8719 | 0.3722 | 0.8249 | 0.8540 | 0.0179 |
+| **G** | **0.9461** | **0.4010** | 0.8251 | 0.9062 | 0.0399 |
 
 - **Fig. 3** loss curves (`charts/`), **Fig. 4** per-model sample grids,
   **Fig. 5** confusion heatmaps (`results/confusion_*.png`).

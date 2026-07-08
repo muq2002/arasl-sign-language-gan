@@ -62,10 +62,10 @@ LR halved at epoch 20 (D) / 35 (G). Latent `Z_DIM=128`.
   λ_lm warms 0 → 2.0 after a 15-epoch delay. Because the target is computed
   on-the-fly as `R(real_aligned)`, it supervises **all** samples (no MediaPipe
   detection gate, unlike B) and needs no precomputed cache.
-- **Result:** recognition jumps **73.8% → 86.2%** over C and SSIM 0.75 → 0.82,
+- **Result:** recognition jumps **76.1% → 87.2%** over C and SSIM 0.75 → 0.82,
   for a small diversity cost (0.41 → 0.37). This single term is the biggest
-  win in the study — see [`model_G.md`](model_G.md) for why it was under-driven
-  and how G amplifies it.
+  single win in the study — see [`model_G.md`](model_G.md) for why it was
+  under-driven and how G amplifies it.
 
 ```mermaid
 flowchart LR
@@ -90,7 +90,8 @@ flowchart LR
 ## Model G — F + recognition, feature-matching, and EMA (this study's best)
 
 Model G keeps F's backbone and **adds three signals + one trick** aimed at the
-residual gap between F (86.2%) and the real-image ceiling (97.2%). Full write-up:
+residual gap between F (87.2%) and the real-image ceiling (97.5%). It reaches
+**94.6% recognition — the best model in the study.** Full write-up:
 [`model_G.md`](model_G.md).
 
 - **(1) Auxiliary-classifier recognition loss** — a classifier trained on **real**
@@ -137,16 +138,23 @@ flowchart LR
 
 ## Results (128px full runs, GAN-test recognition)
 
-Reference classifier on **real** held-out images = **0.9717** (the metric ceiling).
-Recognition = classifier-on-real accuracy over generated samples (GAN-test).
+Reference classifier on **real** held-out images = **0.9752** (the metric ceiling).
+Recognition = classifier-on-real accuracy over generated samples (GAN-test). All
+five models scored in a single run against the same classifier (directly comparable).
 
 | Model | Recognition ↑ | Diversity ↑ | SSIM ↑ | Held-out recog. | Gen. gap |
 |-------|:---:|:---:|:---:|:---:|:---:|
-| A — label only, pixel L1        | 0.6156 | 0.1779 | — | — | — |
-| B — A + MediaPipe landmark loss | 0.6383 | 0.1926 | — | — | — |
-| C — structure-conditioned cGAN  | 0.7383 | 0.4136 | 0.7517 | 0.7174 | 0.0208 |
-| F — C + landmark fusion         | 0.8617 | 0.3722 | 0.8249 | 0.8397 | 0.0220 |
-| **G — F + recog + FM + EMA**    | _pending eval_ | _pending_ | _pending_ | _pending_ | _pending_ |
+| A — label only, pixel L1        | 0.6367 | 0.1779 | — | — | — |
+| B — A + MediaPipe landmark loss | 0.6625 | 0.1926 | — | — | — |
+| C — structure-conditioned cGAN  | 0.7609 | 0.4136 | 0.7517 | 0.7415 | 0.0194 |
+| F — C + landmark fusion         | 0.8719 | 0.3722 | 0.8249 | 0.8540 | 0.0179 |
+| **G — F + recog + FM + EMA**    | **0.9461** | **0.4010** | 0.8251 | 0.9062 | 0.0399 |
 
-Numbers are pulled from `reports/paper/results/metrics.json`; Model G's row is
-filled in when its full run + `paper_eval.py` complete.
+**Model G is the best model:** +7.4 points of recognition over F (0.872 → 0.946),
+closing ~72% of F's remaining gap to the real-image ceiling — while *increasing*
+diversity (0.372 → 0.401), so the auxiliary-classifier loss did not collapse
+variety. Its one trade-off is a slightly larger generalization gap (0.040 vs
+F's 0.018), i.e. marginally more reliance on training-set structures, though it
+still reaches 0.906 recognition on unseen held-out structures.
+
+Numbers are from `reports/paper/results/metrics.json`.

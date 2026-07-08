@@ -229,10 +229,11 @@ Model C and Model D also have dedicated deep-dive pages
 
 Beyond the notebook track (A/B/C/D), the `src/` + `reports/paper/` **paper track**
 carries the fusion line **A → B → C → F → G**, trained full-resolution on the RTX 3050.
-**F** = Model C + a frozen-landmark consistency loss (recognition **73.8% → 86.2%**).
+**F** = Model C + a frozen-landmark consistency loss (recognition **76.1% → 87.2%**).
 **G** = F + an auxiliary-classifier recognition loss, pix2pixHD feature-matching, an
-L1-upgraded landmark term, and generator weight EMA — engineered to fit 8 GB and push
-toward the **97.2%** real-image ceiling.
+L1-upgraded landmark term, and generator weight EMA — engineered to fit 8 GB. **G is
+the best model at 94.6% recognition**, closing ~72% of F's remaining gap to the
+**97.5%** real-image ceiling while *increasing* diversity.
 
 - 📄 **[`reports/paper/model_G.md`](reports/paper/model_G.md)** — Model G deep-dive (design rationale, loss, memory)
 - 📇 **[`reports/paper/model_cards.md`](reports/paper/model_cards.md)** — per-model cards + results table

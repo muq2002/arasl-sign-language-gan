@@ -14,12 +14,12 @@ trick, all engineered to fit an **8 GB RTX 3050**.
 
 The evaluation metric ("recognition") is the **GAN-test** of Shmelkov et al.,
 *How good is my GAN?*: train a CNN classifier on **real** images, then measure its
-accuracy on **generated** images. On this dataset the classifier reaches **97.2%**
-on real held-out images — that is the ceiling. Model F reaches **86.2%**.
+accuracy on **generated** images. On this dataset the classifier reaches **97.5%**
+on real held-out images — that is the ceiling. Model F reaches **87.2%**.
 
 Diffing the code shows Models C and F are **byte-for-byte identical** except for
 one term: F's frozen-landmark consistency loss. That single term drove the entire
-**73.8% → 86.2%** jump. Yet in F's training log it is numerically tiny — about
+**76.1% → 87.2%** jump. Yet in F's training log it is numerically tiny — about
 **0.1% of the generator loss** — because it is an **MSE on a saturating signal**:
 as the fake landmarks approach the real ones, the squared error (and its gradient)
 vanishes.
@@ -140,13 +140,26 @@ classifier) and metrics in `reports/paper/results/`.
 
 ---
 
-## 6. Expected outcome (honest)
+## 6. Outcome (measured)
 
-The upgrades attack exactly the two components of F's residual gap, so G should
-move well into the low-to-mid 90s. But the **final recognition number is
-empirical** — it is measured by `paper_eval.py` on an independent classifier and
-reported in [`model_cards.md`](model_cards.md) and
-[`results/metrics.json`](results/metrics.json) once the run completes. During
-training the auxiliary-classifier loss collapses toward ~0.002 (fakes are highly
-class-faithful to the frozen classifier), which is a strong *leading* indicator —
-not a guarantee, because the evaluator's classifier is independent.
+Model G reaches **94.6% recognition — the best model in the study**, measured by
+`paper_eval.py` on an *independent* classifier (all five models scored in one run
+against the same real-trained classifier, ceiling 97.5%).
+
+| | F | **G** | Δ |
+|---|---:|---:|---:|
+| Recognition | 0.8719 | **0.9461** | **+0.074** |
+| Held-out recognition | 0.8540 | **0.9062** | +0.052 |
+| Diversity | 0.3722 | **0.4010** | +0.029 |
+| SSIM | 0.8249 | 0.8251 | ≈0 |
+| Generalization gap | 0.0179 | 0.0399 | +0.022 |
+
+G closes **~72%** of F's remaining gap to the real-image ceiling (F was 10.3
+points below real; G is only 2.9 below) and — importantly — does so **without a
+diversity collapse** (diversity actually rose), confirming the feature-matching +
+aligned-structure signals offset the mode-seeking pressure of the
+auxiliary-classifier loss. The one trade-off is a larger generalization gap
+(0.040 vs 0.018): G leans slightly more on training-set structures, though it
+still reaches 0.906 recognition on unseen held-out structures. During training the
+auxiliary-classifier loss collapsed toward ~0.001, which correctly predicted the
+strong measured result.

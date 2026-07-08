@@ -115,7 +115,7 @@
   .fill.pending{background:repeating-linear-gradient(45deg,var(--violet-soft),var(--violet-soft) 7px,transparent 7px,transparent 14px);
     border:1px dashed var(--violet)}
   .ceiling{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ceiling)}
-  .ceiling::after{content:"real 97.2%";position:absolute;top:-20px;right:-2px;
+  .ceiling::after{content:"real 97.5%";position:absolute;top:-20px;right:-2px;
     font-family:var(--mono);font-size:.64rem;color:var(--ceiling);white-space:nowrap}
   .score{font-family:var(--mono);font-weight:700;font-size:1.05rem;
     font-variant-numeric:tabular-nums;min-width:64px}
@@ -166,7 +166,8 @@
     <div class="tag-row">
       <span class="tag">A → B → C → F → G</span>
       <span class="tag">metric: GAN-test recognition</span>
-      <span class="tag">ceiling: 97.2%</span>
+      <span class="tag">ceiling: 97.5%</span>
+      <span class="tag" style="border-color:var(--violet);color:var(--violet)">best: G · 94.6%</span>
     </div>
   </header>
 
@@ -178,10 +179,10 @@
     <p>Every model is scored with the <strong>GAN-test</strong>: train a CNN classifier on
       <em>real</em> held-out images, then measure its accuracy on <em>generated</em> images. High
       recognition means the synthetic hand is unambiguously its intended letter. The same classifier
-      reaches <strong>97.2%</strong> on real images — that is the ceiling every generator is chasing.</p>
+      reaches <strong>97.5%</strong> on real images — that is the ceiling every generator is chasing.</p>
     <div class="callout">
       <span class="eyebrow">reference classifier on real held-out images</span>
-      <span class="big">97.17%</span>
+      <span class="big">97.52%</span>
       <span class="rung-sub">The gap between a model's bar and this line is its remaining fidelity debt.</span>
     </div>
   </section>
@@ -226,8 +227,8 @@
         <span class="sig weak">pixel L1 · unaligned → class mean</span>
       </div>
       <div class="meter-row">
-        <div class="meter"><div class="ceiling" style="left:97.2%"></div><div class="fill" data-w="61.6"></div></div>
-        <span class="score">61.6%</span>
+        <div class="meter"><div class="ceiling" style="left:97.5%"></div><div class="fill" data-w="63.7"></div></div>
+        <span class="score">63.7%</span>
       </div>
     </div>
 
@@ -252,8 +253,8 @@
         <span class="sig weak">landmark MSE · masked ~98%</span>
       </div>
       <div class="meter-row">
-        <div class="meter"><div class="ceiling" style="left:97.2%"></div><div class="fill" data-w="63.8"></div></div>
-        <span class="score">63.8%</span>
+        <div class="meter"><div class="ceiling" style="left:97.5%"></div><div class="fill" data-w="66.3"></div></div>
+        <span class="score">66.3%</span>
       </div>
     </div>
 
@@ -280,8 +281,8 @@
         <span class="sig good">aligned L1 · same image</span>
       </div>
       <div class="meter-row">
-        <div class="meter"><div class="ceiling" style="left:97.2%"></div><div class="fill" data-w="73.8"></div></div>
-        <span class="score">73.8%</span>
+        <div class="meter"><div class="ceiling" style="left:97.5%"></div><div class="fill" data-w="76.1"></div></div>
+        <span class="score">76.1%</span>
       </div>
     </div>
 
@@ -308,8 +309,8 @@
         <span class="sig good">landmark MSE · all samples</span>
       </div>
       <div class="meter-row">
-        <div class="meter"><div class="ceiling" style="left:97.2%"></div><div class="fill" data-w="86.2"></div></div>
-        <span class="score">86.2%</span>
+        <div class="meter"><div class="ceiling" style="left:97.5%"></div><div class="fill" data-w="87.2"></div></div>
+        <span class="score">87.2%</span>
       </div>
     </div>
 
@@ -339,8 +340,8 @@
         <span class="sig newsig">generator EMA</span>
       </div>
       <div class="meter-row">
-        <div class="meter"><div class="ceiling" style="left:97.2%"></div><div class="fill pending" data-w="93" title="training / measuring"></div></div>
-        <span class="score">measuring…</span>
+        <div class="meter"><div class="ceiling" style="left:97.5%"></div><div class="fill" data-w="94.6"></div></div>
+        <span class="score">94.6%</span>
       </div>
     </div>
   </section>
@@ -400,17 +401,18 @@
       <table>
         <thead><tr><th>Model</th><th>Recognition ↑</th><th>Diversity ↑</th><th>SSIM ↑</th><th>Held-out</th><th>Gap</th></tr></thead>
         <tbody>
-          <tr><td>A — label only</td><td class="num">0.6156</td><td class="num">0.178</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
-          <tr><td>B — + MediaPipe</td><td class="num">0.6383</td><td class="num">0.193</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
-          <tr><td>C — structure cGAN</td><td class="num">0.7383</td><td class="num">0.414</td><td class="num">0.752</td><td class="num">0.717</td><td class="num">0.021</td></tr>
-          <tr><td>F — + landmark fusion</td><td class="num">0.8617</td><td class="num">0.372</td><td class="num">0.825</td><td class="num">0.840</td><td class="num">0.022</td></tr>
-          <tr class="hl"><td>G — + recog + FM + EMA</td><td class="num">pending</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr><td>A — label only</td><td class="num">0.6367</td><td class="num">0.178</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr><td>B — + MediaPipe</td><td class="num">0.6625</td><td class="num">0.193</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr><td>C — structure cGAN</td><td class="num">0.7609</td><td class="num">0.414</td><td class="num">0.752</td><td class="num">0.742</td><td class="num">0.019</td></tr>
+          <tr><td>F — + landmark fusion</td><td class="num">0.8719</td><td class="num">0.372</td><td class="num">0.825</td><td class="num">0.854</td><td class="num">0.018</td></tr>
+          <tr class="hl"><td>G — + recog + FM + EMA</td><td class="num">0.9461</td><td class="num">0.401</td><td class="num">0.825</td><td class="num">0.906</td><td class="num">0.040</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="note"><strong>Honest status:</strong> Model G's row is filled by <code>src/paper_eval.py</code>
-      on an <em>independent</em> classifier after its full run completes. During training the
-      recognition loss collapses toward ~0.002 — a strong leading indicator, not a guarantee.</div>
+    <div class="note"><strong>Result:</strong> Model G is the best model — <strong>+7.4 points over F</strong>
+      (0.872 → 0.946), closing ~72% of F's gap to the real-image ceiling, and with <em>higher</em>
+      diversity (0.372 → 0.401). Scored by <code>src/paper_eval.py</code> on an independent classifier;
+      all five models in one comparable run.</div>
   </section>
 
   <footer>

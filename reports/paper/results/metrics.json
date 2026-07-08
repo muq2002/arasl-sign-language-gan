@@ -1,32 +1,39 @@
 {
-  "reference_classifier_on_real": 0.9717,
+  "reference_classifier_on_real": 0.9752,
   "num_classes": 32,
   "img_size": 128,
   "n_per_class_eval": 40,
   "per_model": {
     "A": {
-      "recognition": 0.6156,
+      "recognition": 0.6367,
       "diversity": 0.1779,
       "ssim": null
     },
     "B": {
-      "recognition": 0.6383,
+      "recognition": 0.6625,
       "diversity": 0.1926,
       "ssim": null
     },
     "C": {
-      "recognition": 0.7383,
+      "recognition": 0.7609,
       "diversity": 0.4136,
       "ssim": 0.7517,
-      "heldout_recognition": 0.7174,
-      "generalization_gap": 0.0208
+      "heldout_recognition": 0.7415,
+      "generalization_gap": 0.0194
     },
     "F": {
-      "recognition": 0.8617,
+      "recognition": 0.8719,
       "diversity": 0.3722,
       "ssim": 0.8249,
-      "heldout_recognition": 0.8397,
-      "generalization_gap": 0.022
+      "heldout_recognition": 0.854,
+      "generalization_gap": 0.0179
+    },
+    "G": {
+      "recognition": 0.9461,
+      "diversity": 0.401,
+      "ssim": 0.8251,
+      "heldout_recognition": 0.9062,
+      "generalization_gap": 0.0399
     }
   }
 }
