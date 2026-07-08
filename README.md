@@ -225,6 +225,46 @@ Model C and Model D also have dedicated deep-dive pages
 ([`docs/model-C-validation.html`](docs/model-C-validation.html),
 [`docs/model-D-diffusion.html`](docs/model-D-diffusion.html)).
 
+## Paper track — fusion models F & G (128px GPU runs)
+
+Beyond the notebook track (A/B/C/D), the `src/` + `reports/paper/` **paper track**
+carries the fusion line **A → B → C → F → G**, trained full-resolution on the RTX 3050.
+**F** = Model C + a frozen-landmark consistency loss (recognition **73.8% → 86.2%**).
+**G** = F + an auxiliary-classifier recognition loss, pix2pixHD feature-matching, an
+L1-upgraded landmark term, and generator weight EMA — engineered to fit 8 GB and push
+toward the **97.2%** real-image ceiling.
+
+- 📄 **[`reports/paper/model_G.md`](reports/paper/model_G.md)** — Model G deep-dive (design rationale, loss, memory)
+- 📇 **[`reports/paper/model_cards.md`](reports/paper/model_cards.md)** — per-model cards + results table
+- 📝 **[`reports/paper/paper.md`](reports/paper/paper.md)** — paper-ready scaffold
+- 🖼️ **[`reports/paper/models_explainer.html`](reports/paper/models_explainer.html)** — visual block-diagram walkthrough with real dataset images
+
+```mermaid
+flowchart LR
+    R["real image"] --> SM["structure map<br/>Canny + silhouette + distance"]
+    SM --> G(("Generator<br/>encoder–decoder"))
+    Y["class label"] --> G
+    Z["noise z (style)"] --> G
+    G --> FK["fake image"]
+    FK --> D{"Paired Discriminator<br/>(image, structure, label)"}
+    SM --> D
+    Y --> D
+    R --> D
+    D --> ADV["adversarial loss"]
+    FK -. "aligned L1" .-> R
+    FK --> REG["frozen landmark regressor"]
+    REG -. "landmark L1 (λ→8)" .-> R
+    D  -. "feature-matching L1 (×10)" .-> R
+    FK --> CLF["frozen aux classifier<br/>(real-trained, independent)"]
+    CLF -. "recognition CE (λ→1)" .-> Y
+    G  -. "weight EMA (0.999)" .-> EMAG["exported EMA generator"]
+    ADV --> G
+    classDef good fill:#10261d,stroke:#2ea043,color:#bff0dc;
+    classDef new fill:#1c1733,stroke:#9d8df5,color:#d9d2ff;
+    class SM good;
+    class REG,CLF,EMAG new;
+```
+
 ## Project structure
 
 ```

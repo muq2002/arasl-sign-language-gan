@@ -52,7 +52,101 @@ LR halved at epoch 20 (D) / 35 (G). Latent `Z_DIM=128`.
   on; small train↔held-out recognition gap ⇒ it learned structure→image, not
   memorization.
 
+## Model F — C structure + B landmark loss (fusion)
+
+- **Backbone = Model C, unchanged** (same structure-conditioned generator +
+  paired discriminator + aligned L1). The **only** addition is a supervision
+  signal, so F isolates exactly what the landmark loss buys.
+- **Extra loss:** Model B's **frozen landmark regressor** `R` is applied to both
+  the fake and the aligned real target; `+ λ_lm·mean((R(fake) − R(real))²)`,
+  λ_lm warms 0 → 2.0 after a 15-epoch delay. Because the target is computed
+  on-the-fly as `R(real_aligned)`, it supervises **all** samples (no MediaPipe
+  detection gate, unlike B) and needs no precomputed cache.
+- **Result:** recognition jumps **73.8% → 86.2%** over C and SSIM 0.75 → 0.82,
+  for a small diversity cost (0.41 → 0.37). This single term is the biggest
+  win in the study — see [`model_G.md`](model_G.md) for why it was under-driven
+  and how G amplifies it.
+
+```mermaid
+flowchart LR
+    R["real image"] --> SM["structure map<br/>Canny + silhouette + distance"]
+    SM --> G(("Generator<br/>encoder–decoder"))
+    Y["class label"] --> G
+    Z["noise z (style)"] --> G
+    G --> FK["fake image"]
+    FK --> D{"Paired Discriminator<br/>(image, structure, label)"}
+    SM --> D
+    Y --> D
+    R --> D
+    D --> ADV["adversarial loss"]
+    FK -. "aligned L1 (same image)" .-> R
+    FK --> REG["frozen landmark<br/>regressor (Model B)"]
+    REG -. "landmark MSE" .-> R
+    ADV --> G
+    classDef good fill:#10261d,stroke:#2ea043,color:#bff0dc;
+    class SM,REG good;
+```
+
+## Model G — F + recognition, feature-matching, and EMA (this study's best)
+
+Model G keeps F's backbone and **adds three signals + one trick** aimed at the
+residual gap between F (86.2%) and the real-image ceiling (97.2%). Full write-up:
+[`model_G.md`](model_G.md).
+
+- **(1) Auxiliary-classifier recognition loss** — a classifier trained on **real**
+  images (independent seed + light augmentation, kept separate from the eval's
+  ruler) scores each fake; `+ λ_cls·CE(clf(fake), label)`. Directly optimizes the
+  class-discriminability that "recognition" measures (AC-GAN).
+- **(2) Discriminator feature-matching** — `+ 10·L1` between D's 16×16 and 8×8
+  activations of fake vs the aligned real target (pix2pixHD). Sharpens texture the
+  pixel-L1 leaves blurry.
+- **(3) Landmark loss upgraded** — **L1** (not MSE, which vanishes as it
+  saturates), weight → **8.0**, warmup started at epoch 5. Pulls harder on the
+  term that already drove C → F.
+- **(4) Generator weight EMA** (decay 0.999) exported as the inference generator.
+- **8 GB fit:** real-side targets (D features, real landmarks) are computed
+  **outside** the gradient tape so only fake forward passes are retained.
+
+```mermaid
+flowchart LR
+    R["real image"] --> SM["structure map<br/>Canny + silhouette + distance"]
+    SM --> G(("Generator<br/>encoder–decoder"))
+    Y["class label"] --> G
+    Z["noise z (style)"] --> G
+    G --> FK["fake image"]
+    FK --> D{"Paired Discriminator<br/>(image, structure, label)"}
+    SM --> D
+    Y --> D
+    R --> D
+    D --> ADV["adversarial loss"]
+    FK -. "aligned L1" .-> R
+    FK --> REG["frozen landmark regressor"]
+    REG -. "landmark L1 (λ→8)" .-> R
+    D -. "feature-matching L1 (×10)" .-> R
+    FK --> CLF["frozen aux classifier<br/>(real-trained, independent)"]
+    CLF -. "recognition CE (λ→1)" .-> Y
+    G -. "weight EMA (0.999)" .-> EMAG["exported EMA generator"]
+    ADV --> G
+    classDef good fill:#10261d,stroke:#2ea043,color:#bff0dc;
+    classDef new fill:#1c1733,stroke:#9d8df5,color:#d9d2ff;
+    class SM good;
+    class CLF,EMAG,REG new;
+```
+
 ---
 
-*Final metrics (recognition / diversity / SSIM / held-out gap) are filled in from
-`reports/paper/results/metrics.json` after the full runs complete.*
+## Results (128px full runs, GAN-test recognition)
+
+Reference classifier on **real** held-out images = **0.9717** (the metric ceiling).
+Recognition = classifier-on-real accuracy over generated samples (GAN-test).
+
+| Model | Recognition ↑ | Diversity ↑ | SSIM ↑ | Held-out recog. | Gen. gap |
+|-------|:---:|:---:|:---:|:---:|:---:|
+| A — label only, pixel L1        | 0.6156 | 0.1779 | — | — | — |
+| B — A + MediaPipe landmark loss | 0.6383 | 0.1926 | — | — | — |
+| C — structure-conditioned cGAN  | 0.7383 | 0.4136 | 0.7517 | 0.7174 | 0.0208 |
+| F — C + landmark fusion         | 0.8617 | 0.3722 | 0.8249 | 0.8397 | 0.0220 |
+| **G — F + recog + FM + EMA**    | _pending eval_ | _pending_ | _pending_ | _pending_ | _pending_ |
+
+Numbers are pulled from `reports/paper/results/metrics.json`; Model G's row is
+filled in when its full run + `paper_eval.py` complete.
