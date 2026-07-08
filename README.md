@@ -274,6 +274,49 @@ per-class heatmaps: [`reports/paper/results/`](reports/paper/results/).
 Per-model 8×32 generation grids: [`reports/paper/figures/`](reports/paper/figures/)
 (`samples_A.png` … `samples_G.png`).
 
+### Per-class confusion — all models
+
+Row-normalized confusion matrices (true intended letter vs the reference classifier's
+prediction over generated samples). A brighter, cleaner diagonal = better per-class
+recognition. Numbers below are from the confusion run (independent classifier, 60
+samples/class), so they track — but don't exactly equal — the headline recognition.
+
+| Model A | Model B | Model C |
+|:---:|:---:|:---:|
+| ![Model A confusion](reports/paper/results/confusion_A.png) | ![Model B confusion](reports/paper/results/confusion_B.png) | ![Model C confusion](reports/paper/results/confusion_C.png) |
+
+| Model F | **Model G (best)** |
+|:---:|:---:|
+| ![Model F confusion](reports/paper/results/confusion_F.png) | ![Model G confusion](reports/paper/results/confusion_G.png) |
+
+**Weakest classes per model** — the per-class *floor* rises steadily A → G:
+
+| Rank | A | B | C | F | **G (best)** |
+|:---:|---|---|---|---|---|
+| 1 (worst) | gaaf 0.13 | gaaf 0.25 | gaaf 0.45 | meem 0.75 | **aleff 0.83** |
+| 2 | khaa 0.22 | khaa 0.33 | meem 0.45 | ha 0.77 | ghain 0.85 |
+| 3 | thaa 0.30 | ghain 0.42 | ha 0.50 | dhad 0.80 | fa 0.87 |
+| 4 | ghain 0.38 | dal 0.45 | bb 0.57 | taa 0.80 | dhad 0.88 |
+| 5 | waw 0.42 | thal 0.47 | fa 0.57 | zay 0.80 | gaaf 0.88 |
+| 6 | jeem 0.43 | waw 0.53 | thaa 0.58 | aleff 0.82 | laam 0.88 |
+
+Model A's *worst* class is recognized only 13% of the time; by Model G **every one of
+the 32 classes clears 83%.**
+
+**Most-confused letter pairs** (intended → predicted, fraction of samples):
+
+| Model | Top confusions |
+|-------|----------------|
+| A | `gaaf→ha` .40 · `ghain→ain` .35 · `taa→bb` .33 |
+| B | `gaaf→fa` .33 · `gaaf→ha` .33 · `ghain→ain` .30 |
+| C | `meem→la` .30 · `zay→kaaf` .22 · `thaa→kaaf` .13 |
+| F | `zay→kaaf` .18 · `dha→kaaf` .12 · `ra→kaaf` .12 |
+| **G** | `aleff→sheen` .07 · `aleff→ain` .05 · `bb→kaaf` .05 |
+
+A persistent **`→ kaaf` attractor** appears from Model C onward (open-hand shapes drift
+toward `kaaf`); Model G shrinks *every* confusion below 0.07. Full per-class data:
+[`reports/paper/results/confusion_summary.json`](reports/paper/results/confusion_summary.json).
+
 - 📄 **[`reports/paper/model_G.md`](reports/paper/model_G.md)** — Model G deep-dive (design rationale, loss, memory)
 - 📇 **[`reports/paper/model_cards.md`](reports/paper/model_cards.md)** — per-model cards + results table
 - 📝 **[`reports/paper/paper.md`](reports/paper/paper.md)** — paper-ready scaffold
