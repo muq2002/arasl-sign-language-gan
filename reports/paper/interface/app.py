@@ -100,19 +100,33 @@ def build_ui():
         print("No exported models found. Train + export first."); return None
     any_labels = next(iter(MODELS.values()))["label_to_idx"]
     letters = sorted(any_labels.keys())
+    names = list(MODELS.keys())
+    default_model = next((m for m in names if m.startswith("G")), names[-1])
     with gr.Blocks(title="ArASL Sign Generator") as demo:
-        gr.Markdown("# Arabic Sign-Language Generator\nPick a letter and a model, then Generate.")
+        gr.Markdown(
+            "# 🤟 Arabic Sign-Language Generator\n"
+            "Generate 128×128 hand signs for any of the **32 Arabic letters** from five trained "
+            "models. **Model G is the best (94.6% recognition).** For the structure-conditioned "
+            "models (C / F / G) every click samples a new real structure → a fresh pose — click "
+            "**Generate** again for more variety.")
         with gr.Row():
-            model = gr.Dropdown(list(MODELS.keys()), value=list(MODELS.keys())[-1], label="Model")
-            letter = gr.Dropdown(letters, value=letters[0], label="Letter")
-            n = gr.Slider(1, 8, value=4, step=1, label="How many")
-        btn = gr.Button("Generate", variant="primary")
-        gallery = gr.Gallery(label="Generated signs", columns=4, height="auto")
+            with gr.Column(scale=1):
+                model = gr.Dropdown(names, value=default_model, label="Model")
+                letter = gr.Dropdown(letters, value=letters[0], label="Letter")
+                n = gr.Slider(1, 8, value=4, step=1, label="How many samples")
+                btn = gr.Button("✨ Generate", variant="primary", size="lg")
+            with gr.Column(scale=2):
+                gallery = gr.Gallery(label="Generated signs", columns=4,
+                                     height=440, object_fit="contain")
+        gr.Markdown("**Model ladder:** A (label only) · B (+MediaPipe) · C (structure-conditioned) "
+                    "· F (+landmark fusion) · **G (recognition-optimized — best)**")
         btn.click(generate, [model, letter, n], gallery)
     return demo
 
 
 if __name__ == "__main__":
+    import gradio as gr
     demo = build_ui()
     if demo:
-        demo.launch(server_name="0.0.0.0", inbrowser=False)
+        demo.launch(server_name="0.0.0.0", server_port=7860, inbrowser=False,
+                    theme=gr.themes.Soft(primary_hue="violet", secondary_hue="slate"))

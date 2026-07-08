@@ -4,6 +4,35 @@ Conditional GANs — and a diffusion baseline — that generate 128×128 graysca
 Sign Language hand images (32 letter classes) from the **ArASL 54K** dataset. The best
 model, **G**, reaches **94.6% recognition** against a **97.5%** real-image ceiling.
 
+## 🎮 Try it live — interactive generator
+
+Generate Arabic hand signs in your browser from any of the five models. Pick a model
+and a letter, hit **Generate**, and watch the quality climb **A → G**. Runs locally on
+your GPU — no internet needed.
+
+```bash
+# 1. GPU libraries + env   (or just: conda activate arasl)
+source activate_gpu_env.sh
+# 2. one-time: install the UI
+pip install gradio
+# 3. launch the demo
+python reports/paper/interface/app.py
+```
+
+Then open **http://localhost:7860** 👇
+
+| Control | Options |
+|---------|---------|
+| **Model** | A · B · C · F · **G (best — 94.6%)** |
+| **Letter** | any of the 32 Arabic letters |
+| **Samples** | 1–8 per click |
+| **✨ Generate** | for C / F / G each click resamples a real structure → a fresh pose (click again for variety) |
+
+> **Prerequisite:** the exported generators in `outputs/<run>/checkpoints/export/`
+> (already in this repo for A/B/C/F/G). Prefer a static, no-install walkthrough? Open the
+> visual explainer **[`reports/paper/models_explainer.html`](reports/paper/models_explainer.html)**
+> — block diagrams, real dataset images, and the full results, all in one page.
+
 ## Models
 
 This repo evaluates a **ladder of five conditional GANs (A → B → C → F → G)** plus a
