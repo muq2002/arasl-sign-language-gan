@@ -1,12 +1,12 @@
 """
 End-user interface — generate Arabic Sign-Language hand signs from the trained
-models (A, B, C). Pick a letter, pick a model, click Generate.
+models (A, B, C, F, G). Pick a letter, pick a model, click Generate.
 
 - Models A / B: class-conditioned. Generate directly from noise + label.
-- Model C: structure-conditioned. We pick a random REAL image of the chosen
-  letter from the dataset, compute its structure map (Canny+silhouette+distance),
-  and generate a NEW hand that follows that structure. (Click Generate again for
-  a different structure / style.)
+- Models C / F / G: structure-conditioned. We pick a random REAL image of the
+  chosen letter from the dataset, compute its structure map (Canny+silhouette+
+  distance), and generate a NEW hand that follows that structure. (Click Generate
+  again for a different structure / style.) G is the best model (94.6% recognition).
 
 Loads whichever generators have been exported to:
   outputs/<run>/checkpoints/export/generator.keras
@@ -31,7 +31,9 @@ CANNY_LO, CANNY_HI = 60, 160
 RUNS = {
     "A — pixel loss only": os.path.join(OUTPUTS, "cgan_A_128"),
     "B — + MediaPipe landmark loss": os.path.join(OUTPUTS, "cgan_B_128mp"),
-    "C — structure-conditioned (best)": os.path.join(OUTPUTS, "cgan_C_128struct"),
+    "C — structure-conditioned": os.path.join(OUTPUTS, "cgan_C_128struct"),
+    "F — + landmark fusion": os.path.join(OUTPUTS, "cgan_F_128fusion"),
+    "G — recognition-optimized (best · 94.6%)": os.path.join(OUTPUTS, "cgan_G_128plus"),
 }
 
 

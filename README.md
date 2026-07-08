@@ -263,6 +263,7 @@ per-class heatmaps: [`reports/paper/results/`](reports/paper/results/).
 - 📇 **[`reports/paper/model_cards.md`](reports/paper/model_cards.md)** — per-model cards + results table
 - 📝 **[`reports/paper/paper.md`](reports/paper/paper.md)** — paper-ready scaffold
 - 🖼️ **[`reports/paper/models_explainer.html`](reports/paper/models_explainer.html)** — visual block-diagram walkthrough with real dataset images
+- 🎛️ **[`reports/paper/interface/app.py`](reports/paper/interface/app.py)** — Gradio demo: pick a letter + model, generate signs from **any of the 5 models** (`pip install gradio && python reports/paper/interface/app.py`)
 
 ```mermaid
 flowchart LR
