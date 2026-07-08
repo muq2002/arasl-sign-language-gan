@@ -259,6 +259,14 @@ with errors diffuse and a small persistent `→ kaaf` confusion cluster.
 Full metrics: [`reports/paper/results/metrics.json`](reports/paper/results/metrics.json);
 per-class heatmaps: [`reports/paper/results/`](reports/paper/results/).
 
+**Qualitative samples** (real vs each model, per letter — regenerate with
+`python src/make_generation_figures.py`):
+
+![Real vs generated per letter for A/B/C/F/G](reports/paper/figures/real_vs_generated.png)
+
+Per-model 8×32 generation grids: [`reports/paper/figures/`](reports/paper/figures/)
+(`samples_A.png` … `samples_G.png`).
+
 - 📄 **[`reports/paper/model_G.md`](reports/paper/model_G.md)** — Model G deep-dive (design rationale, loss, memory)
 - 📇 **[`reports/paper/model_cards.md`](reports/paper/model_cards.md)** — per-model cards + results table
 - 📝 **[`reports/paper/paper.md`](reports/paper/paper.md)** — paper-ready scaffold

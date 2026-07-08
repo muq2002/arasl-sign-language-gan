@@ -106,8 +106,11 @@ comparable run). Reference classifier on real = 0.9752.
 | F | 0.8719 | 0.3722 | 0.8249 | 0.8540 | 0.0179 |
 | **G** | **0.9461** | **0.4010** | 0.8251 | 0.9062 | 0.0399 |
 
-- **Fig. 3** loss curves (`charts/`), **Fig. 4** per-model sample grids,
-  **Fig. 5** confusion heatmaps (`results/confusion_*.png`).
+- **Fig. 3** — real vs generated per letter (`figures/real_vs_generated.png`):
+  A/B blobby, C/F sharper with occasional grid artifacts, **G follows the real
+  structure most faithfully.**
+- **Fig. 4** — per-model 8×32 generation grids (`figures/samples_{A,B,C,F,G}.png`).
+- **Fig. 5** — confusion heatmaps (`results/confusion_*.png`); loss curves (`charts/`).
 - Confusion narrative: F's worst classes (`aleff, dha, zay, gaaf, laam`) collapse
   toward `kaaf`; report how G's recognition/feature-matching losses redistribute
   these (fill from `results/confusion_summary.json` after G's run).
