@@ -1,20 +1,27 @@
 # Arabic Sign Language Image Generation (ArASL 54K)
 
-Two conditional GANs that generate 128×128 grayscale Arabic Sign Language hand images
-(32 letter classes) from the **ArASL 54K** dataset.
+Conditional GANs — and a diffusion baseline — that generate 128×128 grayscale Arabic
+Sign Language hand images (32 letter classes) from the **ArASL 54K** dataset. The best
+model, **G**, reaches **94.6% recognition** against a **97.5%** real-image ceiling.
 
 ## Models
 
-This repo evaluates **four** generators on ArASL. A/B/C share one cGAN backbone and
-differ in *how* they get structural supervision; **D switches paradigm** to a
-structure-conditioned diffusion model. Conditioning/supervision is the axis that
-decides everything.
+This repo evaluates a **ladder of five conditional GANs (A → B → C → F → G)** plus a
+**diffusion baseline (D)**. A/B/C share one cGAN backbone and differ in *how* they get
+structural supervision; **F** and **G** extend the structure-conditioned Model C with
+fusion losses (**G is the best model, 94.6%**); **D switches paradigm** to a
+structure-conditioned diffusion model. Conditioning/supervision is the axis that decides
+everything. The A/B/C/D notebooks are documented below; the full **A → B → C → F → G
+paper track** (F/G) is in the [Paper track](#paper-track--fusion-models-f--g-128px-gpu-runs)
+section, with results and loss details.
 
-| Model | Notebook | How it's conditioned | Structural supervision | Extra dependency |
-|-------|----------|----------------------|------------------------|------------------|
+| Model | Notebook / script | How it's conditioned | Structural supervision | Extra dependency |
+|-------|-------------------|----------------------|------------------------|------------------|
 | **A** | [`notebooks/model_A_cgan_128_no_mediapipe.ipynb`](notebooks/model_A_cgan_128_no_mediapipe.ipynb) | Class label only | Pixel L1 to an unaligned target | — |
 | **B** | [`notebooks/model_B_cgan_128_mediapipe.ipynb`](notebooks/model_B_cgan_128_mediapipe.ipynb) | Class label only | Pixel L1 **+** MediaPipe landmark MSE | MediaPipe Hands |
 | **C** | [`notebooks/model_C_cgan_128_structure.ipynb`](notebooks/model_C_cgan_128_structure.ipynb) | Class label **+ per-image structure map** | Adversarial + paired (structure and target from the *same* image) | OpenCV (Canny/distance transform) |
+| **F** | [`src/train_model_f.py`](src/train_model_f.py) | Class label **+ per-image structure map** | Model C **+ frozen-landmark consistency loss** (all samples) | OpenCV, Model B regressor |
+| **G** | [`src/train_model_g.py`](src/train_model_g.py) | Class label **+ per-image structure map** | Model F **+ feature-matching + auxiliary-classifier recognition + EMA** (**best, 94.6%**) | OpenCV, aux classifier |
 | **D** | [`notebooks/model_D_diffusion_structure.ipynb`](notebooks/model_D_diffusion_structure.ipynb) | Structure map **+ class**, **+ classifier-free guidance** | Iterative denoising (DDPM), **not** a GAN | OpenCV |
 
 ### Shared backbone (A, B, C)
