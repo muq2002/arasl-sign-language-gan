@@ -290,6 +290,101 @@ flowchart LR
     class REG,CLF,EMAG new;
 ```
 
+### How Model G works — step by step
+
+Model G is a **structure-conditioned image translator wrapped in four teachers.**
+One training iteration does the following:
+
+1. **Condition.** For a real training image, a 3-channel **structure map** (Canny
+   edges + Otsu silhouette + distance transform) is computed. This is the *shape*
+   the generator must render — with texture deliberately thrown away.
+2. **Generate.** The generator takes `(structure map, class label, noise z)` and
+   produces a fake 128×128 hand. Noise controls style/variation; the structure
+   fixes the pose; the label fixes the letter.
+3. **Judge (adversarial).** A **paired discriminator** scores the triple
+   `(image, structure, label)` — the fake must look real *and* be consistent with
+   its own structure and letter, not just look like some hand.
+4. **Supervise with four teachers.** Because the structure and the target come from
+   the **same** image, the generator has an *aligned* ground-truth to match. Four
+   signals pull the fake toward it (details below): pixel L1, landmark L1,
+   discriminator feature-matching, and an auxiliary-classifier recognition loss.
+5. **Average (EMA).** After each step, an exponential moving average (decay 0.999)
+   of the generator weights is updated. The **EMA copy** — smoother and higher
+   quality — is what gets exported for inference.
+
+**The 8 GB trick:** the real-side targets (discriminator features and landmarks of
+the *real* image) are constants, so they are computed **outside** the gradient tape
+and `stop_gradient`-ed. Only the *fake* forward passes are retained — that is what
+lets three teacher networks + EMA fit on an 8 GB RTX 3050 at batch 32.
+
+### Loss functions — how Model G improves on Model F
+
+Model F and Model G share the **same generator and discriminator**; only the
+generator's loss differs. F reached 87.2% recognition; G reaches **94.6%** — the
+entire gain comes from the loss terms below.
+
+```
+L_G(F) = adv + 5·|fake−real|₁ + λ_lm·‖R(fake)−R(real)‖²                    (λ_lm→2)
+
+L_G(G) = adv + 5·|fake−real|₁ + λ_lm·|R(fake)−R(real)|₁                    (λ_lm→8)
+                              + 10·Σⱼ|Dⱼ(fake)−Dⱼ(real)|₁                  (feature match)
+                              + λ_cls·CE(clf(fake), y)                      (λ_cls→1)
+```
+
+| Loss term | Model F | Model G | Why G's version is better |
+|-----------|---------|---------|---------------------------|
+| Adversarial | ✓ | ✓ | unchanged |
+| Aligned pixel L1 | `5·L1` | `5·L1` | unchanged (structure fidelity) |
+| **Landmark consistency** | MSE, `λ→2`, warmup @15 | **L1, `λ→8`, warmup @5** | MSE gradient *vanishes* as the term saturates (it was ~0.1% of F's loss); L1 keeps a persistent gradient, the larger weight and earlier warmup drive it harder |
+| **Discriminator feature-matching** | — | **`10·L1` on Dⱼ activations** | pixel-L1 alone leaves texture blurry; matching the discriminator's mid-level features sharpens it — the fix for the appearance/domain gap |
+| **Recognition (auxiliary classifier)** | — | **`λ→1 · CE(clf(fake),y)`** | F never optimizes *class discriminability* directly; a frozen, independently-trained classifier pushes each fake to read as its intended letter (AC-GAN) |
+| **Generator export** | raw final weights | **EMA (0.999)** | averaged weights give a smoother, higher-quality generator for free |
+
+**How to read the improvements.** F's residual gap was two things — *blurry texture*
+and *class confusion on a few letters*. G adds exactly one signal per failure mode
+(feature-matching for texture, recognition CE for class confusion) and **amplifies
+the one term that already worked** (landmark, MSE→L1 with 4× weight). Diversity did
+**not** collapse (0.372 → 0.401) because feature-matching and the aligned structure
+counterbalance the mode-seeking pressure of the recognition loss.
+
+**Model F — generator loss (3 terms):**
+
+```mermaid
+flowchart TB
+    FK["fake = G(structure, label, z)"] --> ADV["adversarial<br/>BCE(D(fake), 1)"]
+    FK --> L1["aligned L1<br/>5·L1(fake, real)"]
+    FK --> LM["landmark MSE<br/>λ_lm·MSE(R(fake), R(real))  (λ→2)"]
+    ADV --> SUM["L_G = adv + L1 + landmark"]
+    L1 --> SUM
+    LM --> SUM
+    SUM --> UPD["update G (raw weights exported)"]
+    classDef weak fill:#241d0e,stroke:#d29922,color:#f0e0c0;
+    class LM weak;
+```
+
+**Model G — generator loss (5 terms + EMA); new signals in violet:**
+
+```mermaid
+flowchart TB
+    RT["real image (target)"] -->|computed OUTSIDE the tape · stop-grad| TGT["Dⱼ(real) features<br/>R(real) landmarks"]
+    FK["fake = G(structure, label, z)"] --> ADV["adversarial<br/>BCE(D(fake), 1)"]
+    FK --> L1["aligned L1<br/>5·L1(fake, real)"]
+    FK --> LM["landmark L1<br/>λ_lm·L1(R(fake), R(real))  (λ→8)"]
+    FK --> FM["feature-matching<br/>10·Σ L1(Dⱼ(fake), Dⱼ(real))"]
+    FK --> CLS["recognition CE<br/>λ_cls·CE(clf(fake), y)  (λ→1)"]
+    TGT -. target .-> LM
+    TGT -. target .-> FM
+    ADV --> SUM["L_G total"]
+    L1 --> SUM
+    LM --> SUM
+    FM --> SUM
+    CLS --> SUM
+    SUM --> UPD["update G"]
+    UPD -. "EMA 0.999" .-> EMA["exported EMA generator"]
+    classDef new fill:#1c1733,stroke:#9d8df5,color:#d9d2ff;
+    class LM,FM,CLS,EMA new;
+```
+
 ## Project structure
 
 ```
