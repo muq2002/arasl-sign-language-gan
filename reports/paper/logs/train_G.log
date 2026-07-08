@@ -1,0 +1,101 @@
+Mixed precision: mixed_float16 enabled
+XLA jit_compile: OFF  |  GPUs: ['/physical_device:GPU:0']
+Loading from /mnt/c/Users/MustafaJK/arasl-sign-language-gan/data/ArASL_dataset (resize 128x128)
+Classes:   0%|          | 0/33 [00:00<?, ?it/s]Classes:   6%|▌         | 2/33 [00:05<01:30,  2.92s/it]Classes:   9%|▉         | 3/33 [00:09<01:36,  3.20s/it]Classes:  12%|█▏        | 4/33 [00:15<02:03,  4.27s/it]Classes:  15%|█▌        | 5/33 [00:20<02:08,  4.61s/it]Classes:  18%|█▊        | 6/33 [00:25<02:07,  4.71s/it]Classes:  21%|██        | 7/33 [00:30<02:05,  4.84s/it]Classes:  24%|██▍       | 8/33 [00:35<01:58,  4.74s/it]Classes:  27%|██▋       | 9/33 [00:40<01:59,  4.98s/it]Classes:  30%|███       | 10/33 [00:45<01:53,  4.94s/it]Classes:  33%|███▎      | 11/33 [00:51<01:51,  5.08s/it]Classes:  36%|███▋      | 12/33 [00:55<01:43,  4.91s/it]Classes:  39%|███▉      | 13/33 [01:00<01:35,  4.77s/it]Classes:  42%|████▏     | 14/33 [01:04<01:29,  4.71s/it]Classes:  45%|████▌     | 15/33 [01:09<01:26,  4.83s/it]Classes:  48%|████▊     | 16/33 [01:14<01:23,  4.91s/it]Classes:  52%|█████▏    | 17/33 [01:20<01:21,  5.09s/it]Classes:  55%|█████▍    | 18/33 [01:25<01:16,  5.09s/it]Classes:  58%|█████▊    | 19/33 [01:30<01:10,  5.04s/it]Classes:  61%|██████    | 20/33 [01:35<01:05,  5.00s/it]WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1783489957.707254     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783489957.709941     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783489957.712361     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783489957.717853     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783489957.721129     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783489957.729690     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+W0000 00:00:1783489957.732494     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  64%|██████▎   | 21/33 [01:39<00:57,  4.81s/it]Classes:  67%|██████▋   | 22/33 [01:44<00:53,  4.90s/it]W0000 00:00:1783489968.589531     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  70%|██████▉   | 23/33 [01:49<00:48,  4.81s/it]Classes:  73%|███████▎  | 24/33 [01:53<00:41,  4.64s/it]Classes:  76%|███████▌  | 25/33 [01:58<00:38,  4.77s/it]Classes:  79%|███████▉  | 26/33 [02:03<00:33,  4.82s/it]Classes:  82%|████████▏ | 27/33 [02:08<00:28,  4.76s/it]Classes:  85%|████████▍ | 28/33 [02:12<00:23,  4.64s/it]W0000 00:00:1783489993.623854     414 png_io.cc:96] PNG warning: iCCP: profile 'ICC Profile': 'RGB ': RGB color space not permitted on grayscale PNG
+Classes:  88%|████████▊ | 29/33 [02:17<00:18,  4.68s/it]Classes:  91%|█████████ | 30/33 [02:21<00:13,  4.44s/it]Classes:  94%|█████████▍| 31/33 [02:27<00:09,  4.91s/it]Classes:  97%|█████████▋| 32/33 [02:30<00:04,  4.50s/it]Classes: 100%|██████████| 33/33 [02:34<00:00,  4.36s/it]Classes: 100%|██████████| 33/33 [02:34<00:00,  4.69s/it]
+W0000 00:00:1783490019.882829     414 cpu_allocator_impl.cc:82] Allocation of 3187998720 exceeds 10% of free system memory.
+W0000 00:00:1783490022.192905     414 cpu_allocator_impl.cc:82] Allocation of 3187998720 exceeds 10% of free system memory.
+Loaded 54049 images, 0 errors, 32 classes
+Training auxiliary recognition classifier (real images, frozen for GAN)...
+Epoch 1/12
+761/761 - 80s - 105ms/step - accuracy: 0.5194 - loss: 1.6876 - val_accuracy: 0.6512 - val_loss: 1.1130
+Epoch 2/12
+761/761 - 67s - 87ms/step - accuracy: 0.8405 - loss: 0.5090 - val_accuracy: 0.9458 - val_loss: 0.2060
+Epoch 3/12
+761/761 - 67s - 88ms/step - accuracy: 0.9020 - loss: 0.3170 - val_accuracy: 0.9269 - val_loss: 0.2508
+Epoch 4/12
+761/761 - 67s - 88ms/step - accuracy: 0.9247 - loss: 0.2448 - val_accuracy: 0.9345 - val_loss: 0.2387
+Epoch 5/12
+761/761 - 67s - 87ms/step - accuracy: 0.9414 - loss: 0.1920 - val_accuracy: 0.9573 - val_loss: 0.1527
+Epoch 6/12
+761/761 - 67s - 88ms/step - accuracy: 0.9465 - loss: 0.1758 - val_accuracy: 0.9626 - val_loss: 0.1406
+Epoch 7/12
+761/761 - 67s - 87ms/step - accuracy: 0.9530 - loss: 0.1537 - val_accuracy: 0.9782 - val_loss: 0.0889
+Epoch 8/12
+761/761 - 67s - 88ms/step - accuracy: 0.9632 - loss: 0.1172 - val_accuracy: 0.9702 - val_loss: 0.1154
+Epoch 9/12
+761/761 - 67s - 88ms/step - accuracy: 0.9637 - loss: 0.1158 - val_accuracy: 0.9700 - val_loss: 0.1091
+Epoch 10/12
+761/761 - 67s - 88ms/step - accuracy: 0.9675 - loss: 0.1014 - val_accuracy: 0.9765 - val_loss: 0.0895
+Epoch 11/12
+761/761 - 67s - 89ms/step - accuracy: 0.9708 - loss: 0.0940 - val_accuracy: 0.9793 - val_loss: 0.0745
+Epoch 12/12
+761/761 - 68s - 89ms/step - accuracy: 0.9733 - loss: 0.0860 - val_accuracy: 0.9771 - val_loss: 0.0844
+W0000 00:00:1783490910.144205     414 cpu_allocator_impl.cc:82] Allocation of 1593999360 exceeds 10% of free system memory.
+W0000 00:00:1783490912.624523     414 cpu_allocator_impl.cc:82] Allocation of 4781998080 exceeds 10% of free system memory.
+W0000 00:00:1783490990.920383     414 cpu_allocator_impl.cc:82] Allocation of 1593999360 exceeds 10% of free system memory.
+/root/miniconda3/envs/arasl/lib/python3.11/site-packages/tensorflow/python/util/numpy_compat.py:47: RuntimeWarning: overflow encountered in cast
+  return np.array(values, copy=copy, order=order).astype(dtype)
+Building structure maps for training set...
+G params 13,941,665 | D params 7,503,745
+Loaded frozen landmark regressor from Model B (471,615 params)
+Ep1/50  D=1.2202  G=2.9898  (adv=1.2506  L1=1.1061  LM=0.0397  FM=0.6332  CLS=2.5737  lam_lm=0.00 lam_cls=0.00)  308.4s
+Ep2/50  D=1.2329  G=2.6880  (adv=1.2646  L1=0.8105  LM=0.0347  FM=0.6129  CLS=1.9635  lam_lm=0.00 lam_cls=0.00)  296.5s
+Ep3/50  D=1.2530  G=2.4006  (adv=1.1658  L1=0.7116  LM=0.0331  FM=0.5232  CLS=1.6005  lam_lm=0.00 lam_cls=0.00)  298.4s
+Ep4/50  D=1.2591  G=2.3301  (adv=1.1558  L1=0.6629  LM=0.0340  FM=0.5114  CLS=1.6130  lam_lm=0.00 lam_cls=0.00)  290.9s
+Ep5/50  D=1.2625  G=2.2836  (adv=1.1540  L1=0.6322  LM=0.0335  FM=0.4974  CLS=1.7129  lam_lm=0.00 lam_cls=0.00)  291.2s
+Ep6/50  D=1.2597  G=2.2391  (adv=1.1407  L1=0.6105  LM=0.0334  FM=0.4879  CLS=1.9548  lam_lm=0.00 lam_cls=0.00)  298.2s
+Ep7/50  D=1.2574  G=2.2868  (adv=1.1531  L1=0.6107  LM=0.0237  FM=0.4861  CLS=0.1792  lam_lm=0.80 lam_cls=0.10)  294.0s
+Ep8/50  D=1.2590  G=2.2704  (adv=1.1513  L1=0.6000  LM=0.0201  FM=0.4749  CLS=0.0606  lam_lm=1.60 lam_cls=0.20)  292.7s
+Ep9/50  D=1.2563  G=2.2618  (adv=1.1510  L1=0.5921  LM=0.0179  FM=0.4663  CLS=0.0313  lam_lm=2.40 lam_cls=0.30)  292.1s
+Ep10/50  D=1.2537  G=2.2766  (adv=1.1722  L1=0.5857  LM=0.0164  FM=0.4587  CLS=0.0190  lam_lm=3.20 lam_cls=0.40)  291.0s
+Ep11/50  D=1.2524  G=2.2622  (adv=1.1740  L1=0.5793  LM=0.0152  FM=0.4424  CLS=0.0118  lam_lm=4.00 lam_cls=0.50)  290.9s
+Ep12/50  D=1.2587  G=2.2519  (adv=1.1763  L1=0.5775  LM=0.0143  FM=0.4246  CLS=0.0085  lam_lm=4.80 lam_cls=0.60)  291.0s
+Ep13/50  D=1.2562  G=2.2501  (adv=1.1769  L1=0.5726  LM=0.0135  FM=0.4207  CLS=0.0066  lam_lm=5.60 lam_cls=0.70)  295.3s
+Ep14/50  D=1.2527  G=2.2669  (adv=1.1873  L1=0.5710  LM=0.0129  FM=0.4209  CLS=0.0067  lam_lm=6.40 lam_cls=0.80)  295.8s
+Ep15/50  D=1.2520  G=2.2690  (adv=1.1952  L1=0.5679  LM=0.0123  FM=0.4135  CLS=0.0045  lam_lm=7.20 lam_cls=0.90)  293.0s
+Ep16/50  D=1.2546  G=2.2464  (adv=1.1842  L1=0.5645  LM=0.0117  FM=0.4001  CLS=0.0037  lam_lm=8.00 lam_cls=1.00)  292.4s
+Ep17/50  D=1.2594  G=2.2095  (adv=1.1672  L1=0.5623  LM=0.0112  FM=0.3863  CLS=0.0037  lam_lm=8.00 lam_cls=1.00)  288.5s
+Ep18/50  D=1.2567  G=2.2224  (adv=1.1811  L1=0.5598  LM=0.0108  FM=0.3921  CLS=0.0027  lam_lm=8.00 lam_cls=1.00)  289.0s
+Ep19/50  D=1.2531  G=2.2167  (adv=1.1833  L1=0.5563  LM=0.0105  FM=0.3903  CLS=0.0030  lam_lm=8.00 lam_cls=1.00)  288.9s
+Ep20/50  D=1.2523  G=2.2202  (adv=1.1945  L1=0.5545  LM=0.0102  FM=0.3873  CLS=0.0026  lam_lm=8.00 lam_cls=1.00)  287.8s
+Ep21/50  D=1.2219  G=2.3452  (adv=1.2750  L1=0.5582  LM=0.0100  FM=0.4291  CLS=0.0029  lam_lm=8.00 lam_cls=1.00)  288.1s
+Ep22/50  D=1.2192  G=2.3889  (adv=1.2802  L1=0.5599  LM=0.0098  FM=0.4680  CLS=0.0024  lam_lm=8.00 lam_cls=1.00)  286.2s
+Ep23/50  D=1.2165  G=2.4263  (adv=1.2987  L1=0.5592  LM=0.0096  FM=0.4891  CLS=0.0021  lam_lm=8.00 lam_cls=1.00)  286.1s
+Ep24/50  D=1.2151  G=2.4318  (adv=1.2907  L1=0.5603  LM=0.0095  FM=0.5020  CLS=0.0025  lam_lm=8.00 lam_cls=1.00)  283.9s
+Ep25/50  D=1.2133  G=2.4382  (adv=1.2926  L1=0.5577  LM=0.0093  FM=0.5116  CLS=0.0021  lam_lm=8.00 lam_cls=1.00)  284.8s
+Ep26/50  D=1.2111  G=2.4584  (adv=1.3008  L1=0.5555  LM=0.0092  FM=0.5267  CLS=0.0021  lam_lm=8.00 lam_cls=1.00)  295.0s
+Ep27/50  D=1.2120  G=2.4491  (adv=1.2955  L1=0.5536  LM=0.0090  FM=0.5259  CLS=0.0020  lam_lm=8.00 lam_cls=1.00)  288.2s
+Ep28/50  D=1.2097  G=2.4467  (adv=1.2975  L1=0.5509  LM=0.0089  FM=0.5250  CLS=0.0021  lam_lm=8.00 lam_cls=1.00)  286.2s
+Ep29/50  D=1.2103  G=2.4404  (adv=1.2935  L1=0.5484  LM=0.0088  FM=0.5263  CLS=0.0020  lam_lm=8.00 lam_cls=1.00)  285.1s
+Ep30/50  D=1.2091  G=2.4494  (adv=1.3006  L1=0.5476  LM=0.0087  FM=0.5299  CLS=0.0019  lam_lm=8.00 lam_cls=1.00)  283.6s
+Ep31/50  D=1.2078  G=2.4540  (adv=1.3031  L1=0.5453  LM=0.0086  FM=0.5352  CLS=0.0020  lam_lm=8.00 lam_cls=1.00)  289.8s
+Ep32/50  D=1.2074  G=2.4501  (adv=1.3021  L1=0.5429  LM=0.0084  FM=0.5361  CLS=0.0019  lam_lm=8.00 lam_cls=1.00)  288.5s
+Ep33/50  D=1.2103  G=2.4340  (adv=1.2903  L1=0.5415  LM=0.0083  FM=0.5341  CLS=0.0016  lam_lm=8.00 lam_cls=1.00)  289.1s
+Ep34/50  D=1.2085  G=2.4350  (adv=1.2970  L1=0.5384  LM=0.0082  FM=0.5322  CLS=0.0017  lam_lm=8.00 lam_cls=1.00)  290.9s
+Ep35/50  D=1.2085  G=2.4376  (adv=1.2966  L1=0.5388  LM=0.0081  FM=0.5354  CLS=0.0018  lam_lm=8.00 lam_cls=1.00)  293.4s
+Ep36/50  D=1.2059  G=2.4036  (adv=1.2826  L1=0.5264  LM=0.0070  FM=0.5373  CLS=0.0011  lam_lm=8.00 lam_cls=1.00)  302.3s
+Ep37/50  D=1.2070  G=2.3818  (adv=1.2774  L1=0.5219  LM=0.0067  FM=0.5279  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  290.4s
+Ep38/50  D=1.2068  G=2.3816  (adv=1.2761  L1=0.5208  LM=0.0066  FM=0.5307  CLS=0.0011  lam_lm=8.00 lam_cls=1.00)  288.3s
+Ep39/50  D=1.2072  G=2.3672  (adv=1.2730  L1=0.5179  LM=0.0065  FM=0.5229  CLS=0.0009  lam_lm=8.00 lam_cls=1.00)  284.8s
+Ep40/50  D=1.2083  G=2.3600  (adv=1.2724  L1=0.5156  LM=0.0065  FM=0.5191  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  287.5s
+Ep41/50  D=1.2084  G=2.3738  (adv=1.2807  L1=0.5141  LM=0.0064  FM=0.5268  CLS=0.0009  lam_lm=8.00 lam_cls=1.00)  283.9s
+Ep42/50  D=1.2070  G=2.3614  (adv=1.2775  L1=0.5119  LM=0.0064  FM=0.5203  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  284.3s
+Ep43/50  D=1.2064  G=2.3807  (adv=1.2848  L1=0.5104  LM=0.0063  FM=0.5340  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  283.9s
+Ep44/50  D=1.2071  G=2.3726  (adv=1.2837  L1=0.5089  LM=0.0063  FM=0.5286  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  283.5s
+Ep45/50  D=1.2062  G=2.3648  (adv=1.2830  L1=0.5074  LM=0.0062  FM=0.5236  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  283.4s
+Ep46/50  D=1.2076  G=2.3662  (adv=1.2851  L1=0.5047  LM=0.0062  FM=0.5256  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  283.2s
+Ep47/50  D=1.2065  G=2.3750  (adv=1.2820  L1=0.5032  LM=0.0062  FM=0.5394  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  283.6s
+Ep48/50  D=1.2047  G=2.3768  (adv=1.2859  L1=0.5028  LM=0.0062  FM=0.5379  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  283.8s
+Ep49/50  D=1.2045  G=2.3820  (adv=1.2890  L1=0.5010  LM=0.0061  FM=0.5421  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  283.8s
+Ep50/50  D=1.2062  G=2.3725  (adv=1.2866  L1=0.5010  LM=0.0061  FM=0.5353  CLS=0.0010  lam_lm=8.00 lam_cls=1.00)  283.5s
+Training complete. Exported EMA generator to /mnt/c/Users/MustafaJK/arasl-sign-language-gan/outputs/cgan_G_128plus/checkpoints/export
