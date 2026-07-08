@@ -11,11 +11,11 @@ and a letter, hit **Generate**, and watch the quality climb **A → G**. Runs lo
 your GPU — no internet needed.
 
 ```bash
-# 1. GPU libraries + env   (or just: conda activate arasl)
-source activate_gpu_env.sh
+# 1. activate the env  (GPU libraries optional — it runs on CPU too)
+source activate_gpu_env.sh      # GPU   ·   or on CPU:   conda activate arasl
 # 2. one-time: install the UI
 pip install gradio
-# 3. launch the demo
+# 3. launch (auto-detects GPU or CPU)
 python reports/paper/interface/app.py
 ```
 
@@ -23,10 +23,12 @@ Then open **http://localhost:7860** 👇
 
 | Control | Options |
 |---------|---------|
-| **Model** | A · B · C · F · **G (best — 94.6%)** |
-| **Letter** | any of the 32 Arabic letters |
-| **Samples** | 1–8 per click |
-| **✨ Generate** | for C / F / G each click resamples a real structure → a fresh pose (click again for variety) |
+| **Model** | **★ All five (compare)** · A · B · C · F · **G (best — 94.6%)** |
+| **Letter** | any of the 32 letters, shown as **English + Arabic** — e.g. `ain (ع)`, `zay (ز)` |
+| **Samples** | 1–8 (compare mode: up to 3 per model) |
+| **✨ Generate** | *compare* mode feeds one shared pose to all five models, side by side |
+
+Runs on **GPU or CPU automatically** (falls back to CPU if no GPU is present).
 
 > **Prerequisite:** the exported generators in `outputs/<run>/checkpoints/export/`
 > (already in this repo for A/B/C/F/G). Prefer a static, no-install walkthrough? Open the
