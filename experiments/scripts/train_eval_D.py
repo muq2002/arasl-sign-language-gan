@@ -144,12 +144,16 @@ def ddim_sample(net, cond, y, w=CFG_EVAL, steps=DDIM_STEPS, seed=0):
     ts = np.linspace(T_TRAIN - 1, 0, steps).astype(np.int32)
     for i, tcur in enumerate(ts):
         tb = tf.fill([bs], int(tcur))
-        eps_c = net([x, cond, tb, y_cond], training=False)
-        if w != 0.0:
-            eps_u = net([x, cond, tb, y_null], training=False)
-            eps = eps_u + w * (eps_c - eps_u)       # CFG
+        # CFG: eps = eps_u + w*(eps_c - eps_u).  w=0 -> unconditional, w=1 -> plain
+        # conditional, w>1 -> guided. The two endpoints skip the redundant forward pass.
+        if w == 1.0:
+            eps = net([x, cond, tb, y_cond], training=False)
+        elif w == 0.0:
+            eps = net([x, cond, tb, y_null], training=False)
         else:
-            eps = eps_c
+            eps_c = net([x, cond, tb, y_cond], training=False)
+            eps_u = net([x, cond, tb, y_null], training=False)
+            eps = eps_u + w * (eps_c - eps_u)
         ab_t = alpha_bar[tcur]
         x0 = (x - np.sqrt(1 - ab_t) * eps) / np.sqrt(ab_t)
         x0 = tf.clip_by_value(x0, -1.0, 1.0)
@@ -184,12 +188,27 @@ def gen_D(net, w, n_per=N_EVAL_PER, seed=0):
         outs.append(f); ys.append(np.full(n_per, c))
     return np.concatenate(outs), np.concatenate(ys)
 
+def intra_class_diversity(f, ys, max_per_class=30):
+    """Mean pairwise L1 WITHIN each class, averaged over classes.
+
+    Must stay intra-class: a flat window over the first N samples spans several
+    classes once N > samples-per-class, and inter-class pairs inflate the score —
+    which also makes runs with different samples-per-class incomparable.
+    """
+    fl = f.reshape(len(f), -1)
+    per = []
+    for c in np.unique(ys):
+        idx = np.where(ys == c)[0][:max_per_class]
+        if len(idx) < 2:
+            continue
+        per.append(np.mean([np.mean(np.abs(fl[i]-fl[j]))
+                            for a, i in enumerate(idx) for j in idx[a+1:]]))
+    return float(np.mean(per))
+
 def evaluate_D(net, w, n_per=N_EVAL_PER):
     f, ys = gen_D(net, w, n_per, 0)
     acc = float((clf.predict(f, verbose=0).argmax(1) == ys).mean())
-    fl = f.reshape(len(f), -1)
-    m = min(60, len(fl))
-    div = float(np.mean([np.mean(np.abs(fl[i]-fl[j])) for i in range(m) for j in range(i+1, m)]))
+    div = intra_class_diversity(f, ys)
     return {"recognition_acc": round(acc, 4), "diversity": round(div, 4)}
 
 # ── sample-grid PNG ─────────────────────────────────────────────────────────

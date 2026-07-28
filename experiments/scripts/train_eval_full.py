@@ -163,13 +163,29 @@ def gssim(a, b):  # global SSIM, inputs HxWx1 in [-1,1]
     cov = ((x-mx)*(y-my)).mean(); c1, c2 = 0.01**2, 0.03**2
     return float(((2*mx*my+c1)*(2*cov+c2))/((mx*mx+my*my+c1)*(vx+vy+c2)))
 
+def intra_class_diversity(f, ys, max_per_class=30):
+    """Mean pairwise L1 WITHIN each class, averaged over classes.
+
+    Must stay intra-class: a flat window over the first N samples spans several
+    classes once N > samples-per-class, and inter-class pairs inflate the score —
+    which also makes runs with different samples-per-class incomparable.
+    """
+    fl = f.reshape(len(f), -1)
+    per = []
+    for c in np.unique(ys):
+        idx = np.where(ys == c)[0][:max_per_class]
+        if len(idx) < 2:
+            continue
+        per.append(np.mean([np.mean(np.abs(fl[i]-fl[j]))
+                            for a, i in enumerate(idx) for j in idx[a+1:]]))
+    return float(np.mean(per))
+
 def metrics(kind, G):
     f, ys = gen_class(kind, G, 60, 0)
     pred = clf.predict(f, verbose=0).argmax(1)
     gantest = float((pred == ys).mean())
     per_class = {int(c): round(float((pred[ys == c] == c).mean()), 3) for c in range(num_classes)}
-    fl = f.reshape(len(f), -1)
-    div = float(np.mean([np.mean(np.abs(fl[i]-fl[j])) for i in range(60) for j in range(i+1, 60)]))
+    div = intra_class_diversity(f, ys)
     # GAN-train: classifier trained on generated, tested on real held-out
     c2 = make_clf(); c2.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=["accuracy"])
