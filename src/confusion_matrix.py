@@ -8,7 +8,7 @@ most-confused letter pairs. This reveals WHERE the recognition gap comes from.
 
 Run:  python src/confusion_matrix.py
 """
-import os, json
+import os, json, csv
 import numpy as np
 import tensorflow as tf
 import matplotlib
@@ -20,11 +20,8 @@ import config as C
 from config import IMG_SIZE, Z_DIM
 from train_model_c import structure_map, load_images_128
 from models import SelfAttention2D
-from paper_eval import build_classifier
+from paper_eval import get_reference_classifier, RES_DIR as RES, EVAL_SEED
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RES = os.path.join(REPO, "reports", "paper", "results")
-os.makedirs(RES, exist_ok=True)
 RUNS = {"A": C.DRIVE_BASE_A, "B": C.DRIVE_BASE_B, "C": C.DRIVE_BASE_C,
         "F": C.DRIVE_BASE_F, "G": C.DRIVE_BASE_G}
 N_PER = 60
@@ -62,13 +59,11 @@ def main():
     classes = list(enc.classes_)
     num_classes = len(classes)
 
-    clf = build_classifier(num_classes)
-    clf.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
-                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                metrics=["accuracy"])
-    clf.fit(X_tr, y_tr, epochs=12, batch_size=64, validation_data=(X_ev, y_ev), verbose=2)
+    # same saved classifier as paper_eval.py (trained there, loaded here)
+    clf, _, _ = get_reference_classifier(X_tr, y_tr, X_ev, y_ev, num_classes, N_PER)
 
     summary = {}
+    full = {}   # complete 32-value per-class accuracy vector per model
     for k, base in RUNS.items():
         G, structure = load_gen(base)
         if G is None:
@@ -101,12 +96,23 @@ def main():
                        key=lambda t: -t[2])[:12]
         per_class = sorted([(classes[i], round(float(cmn[i, i]), 3)) for i in range(num_classes)],
                            key=lambda t: t[1])[:8]
+        full[k] = {classes[i]: round(float(cmn[i, i]), 4) for i in range(num_classes)}
         summary[k] = {"recognition": round(acc, 4), "worst_classes": per_class, "top_confusions": pairs}
         print(f"[{k}] recognition={acc:.3f}  worst: {per_class[:3]}  top confusion: {pairs[0]}")
 
     with open(os.path.join(RES, "confusion_summary.json"), "w") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
     print("wrote", os.path.join(RES, "confusion_summary.json"))
+
+    with open(os.path.join(RES, "per_class_accuracy.json"), "w") as f:
+        json.dump({"eval_seed": EVAL_SEED, "n_per_class": N_PER, "per_model": full},
+                  f, indent=2, ensure_ascii=False)
+    with open(os.path.join(RES, "per_class_accuracy.csv"), "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["class"] + list(full))
+        for c in classes:
+            w.writerow([c] + [full[k][c] for k in full])
+    print("wrote", os.path.join(RES, "per_class_accuracy.csv"))
 
 
 if __name__ == "__main__":

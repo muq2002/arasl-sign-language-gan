@@ -11,7 +11,7 @@ Metrics:
 Writes reports/paper/results/metrics.json and metrics.csv.
 Run:  python src/paper_eval.py
 """
-import os, json, csv
+import os, json, csv, time
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -23,8 +23,15 @@ from train_model_c import structure_map, load_images_128
 from models import SelfAttention2D  # custom layer baked into the exported generators
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RES_DIR = os.path.join(REPO, "reports", "paper", "results")
+# ARASL_EVAL_OUT redirects every eval artifact (metrics, confusion, classifier)
+RES_DIR = os.environ.get("ARASL_EVAL_OUT", os.path.join(REPO, "reports", "paper", "results"))
 os.makedirs(RES_DIR, exist_ok=True)
+
+# ONE global seed + ONE saved reference classifier shared by paper_eval.py and
+# confusion_matrix.py, so the headline table and the confusion matrices are
+# scored by the same classifier instance.
+EVAL_SEED = int(os.environ.get("ARASL_EVAL_SEED", RANDOM_SEED))
+CLF_PATH = os.path.join(RES_DIR, f"reference_classifier_seed{EVAL_SEED}.keras")
 
 RUNS = {"A": C.DRIVE_BASE_A, "B": C.DRIVE_BASE_B, "C": C.DRIVE_BASE_C,
         "F": C.DRIVE_BASE_F, "G": C.DRIVE_BASE_G}
@@ -40,6 +47,32 @@ def build_classifier(num_classes):
         layers.Conv2D(128, 3, padding="same"), layers.BatchNormalization(), layers.LeakyReLU(0.2), layers.MaxPooling2D(),
         layers.Flatten(), layers.Dense(128), layers.LeakyReLU(0.2), layers.Dropout(0.3),
         layers.Dense(num_classes, dtype="float32")])
+
+
+def get_reference_classifier(X_tr, y_tr, X_ev, y_ev, num_classes, n_per_class):
+    """Train the reference classifier once (seeded) and reuse the saved checkpoint.
+
+    Set ARASL_RETRAIN_CLF=1 to force a retrain. Prints the provenance line that
+    both eval logs must share: checkpoint path, mtime, seed, samples per class.
+    """
+    tf.keras.utils.set_random_seed(EVAL_SEED)
+    if os.path.exists(CLF_PATH) and os.environ.get("ARASL_RETRAIN_CLF", "0") != "1":
+        clf = tf.keras.models.load_model(CLF_PATH)
+        status = "loaded"
+    else:
+        clf = build_classifier(num_classes)
+        clf.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
+                    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                    metrics=["accuracy"])
+        clf.fit(X_tr, y_tr, epochs=12, batch_size=64, validation_data=(X_ev, y_ev), verbose=2)
+        clf.save(CLF_PATH)
+        status = "trained"
+    ref_acc = float(clf.evaluate(X_ev, y_ev, verbose=0)[1])
+    mtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(CLF_PATH)))
+    print(f"reference classifier ({status}): path={CLF_PATH} mtime={mtime} "
+          f"seed={EVAL_SEED} samples_per_class={n_per_class}")
+    print(f"reference classifier on real held-out = {ref_acc:.4f}")
+    return clf, ref_acc, mtime
 
 
 def _load_gen(base):
@@ -60,32 +93,22 @@ def main():
     num_classes = len(enc.classes_)
     print(f"eval: {len(X_tr)} train / {len(X_ev)} held-out | {num_classes} classes")
 
-    clf = build_classifier(num_classes)
-    clf.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
-                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                metrics=["accuracy"])
-    clf.fit(X_tr, y_tr, epochs=12, batch_size=64, validation_data=(X_ev, y_ev), verbose=2)
-    ref_acc = float(clf.evaluate(X_ev, y_ev, verbose=0)[1])
-    print(f"reference classifier on real held-out = {ref_acc:.4f}")
-
-    # structure maps for C conditioning
-    C_tr = None
+    clf, ref_acc, clf_mtime = get_reference_classifier(X_tr, y_tr, X_ev, y_ev, num_classes, N_PER_CLASS)
 
     def gen_samples(G, structure, n_per=N_PER_CLASS, seed=0):
-        nonlocal C_tr
         tf.random.set_seed(seed)
         outs, ys = [], []
         for c in range(num_classes):
             oh = tf.one_hot(np.full(n_per, c), num_classes)
             nz = tf.random.normal([n_per, Z_DIM], seed=seed * 100 + c)
             if structure:
-                if C_tr is None:
-                    print("building structure maps for eval...")
-                    C_tr = np.stack([structure_map(x) for x in tqdm(X_tr)]).astype(np.float32)
                 pool = np.where(y_tr == c)[0]
                 idx = np.random.default_rng(seed + c).choice(pool, n_per)
+                # structure maps only for the sampled images (same values as mapping
+                # the whole training set, without the ~9.5 GB float32 array)
                 # Keras 3 forbids mixing numpy + tensors in a list input -> make all tensors
-                cond = tf.convert_to_tensor(C_tr[idx], dtype=tf.float32)
+                cond = tf.convert_to_tensor(
+                    np.stack([structure_map(X_tr[i]) for i in idx]).astype(np.float32))
                 f = G([cond, oh, nz], training=False).numpy()
             else:
                 f = G([nz, oh], training=False).numpy()
@@ -141,6 +164,8 @@ def main():
         per_model[k] = entry
 
     out = {"reference_classifier_on_real": round(ref_acc, 4),
+           "eval_seed": EVAL_SEED, "classifier_checkpoint": os.path.relpath(CLF_PATH, REPO).replace(os.sep, "/"),
+           "classifier_mtime": clf_mtime,
            "num_classes": num_classes, "img_size": IMG_SIZE,
            "n_per_class_eval": N_PER_CLASS, "per_model": per_model}
     with open(os.path.join(RES_DIR, "metrics.json"), "w") as f:

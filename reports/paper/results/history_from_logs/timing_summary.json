@@ -1,0 +1,42 @@
+{
+  "B": {
+    "epochs": 50,
+    "mean_s": 538.8,
+    "median_s": 572.45,
+    "min_s": 417.4,
+    "max_s": 574.4,
+    "total_s": 26941.4,
+    "total_h": 7.48,
+    "n_g_updates_epochs": {
+      "2": 11,
+      "3": 39
+    }
+  },
+  "C": {
+    "epochs": 50,
+    "mean_s": 232.4,
+    "median_s": 225.6,
+    "min_s": 224.5,
+    "max_s": 261.9,
+    "total_s": 11618.5,
+    "total_h": 3.23
+  },
+  "F": {
+    "epochs": 50,
+    "mean_s": 239.2,
+    "median_s": 236.3,
+    "min_s": 235.7,
+    "max_s": 261.9,
+    "total_s": 11962.5,
+    "total_h": 3.32
+  },
+  "G": {
+    "epochs": 50,
+    "mean_s": 289.5,
+    "median_s": 288.7,
+    "min_s": 283.2,
+    "max_s": 308.4,
+    "total_s": 14475.1,
+    "total_h": 4.02
+  }
+}

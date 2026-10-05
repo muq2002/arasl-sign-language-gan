@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missing values and results — answers</title>
+<style>
+  :root { --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --line:#d1d9e0; --card:#f6f8fa;
+          --ok:#1a7f37; --part:#9a6700; --no:#cf222e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --line:#3d444d; --card:#151b23;
+            --ok:#3fb950; --part:#d29922; --no:#f85149; }
+  }
+  body { background:var(--bg); color:var(--fg); font:16px/1.55 system-ui,Segoe UI,Arial,sans-serif;
+         max-width:960px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:1.7rem; margin-bottom:.2em; }
+  h2 { font-size:1.25rem; margin-top:2.2em; border-bottom:1px solid var(--line); padding-bottom:.3em; }
+  h3 { font-size:1.05rem; margin:1.6em 0 .4em; }
+  p.lead, .muted { color:var(--muted); }
+  code { background:var(--card); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+  pre { background:var(--card); padding:12px; border-radius:6px; overflow-x:auto; border:1px solid var(--line); }
+  pre code { background:none; padding:0; }
+  .tablewrap { overflow-x:auto; }
+  table { border-collapse:collapse; margin:.6em 0; font-size:.93rem; }
+  th, td { border:1px solid var(--line); padding:5px 10px; text-align:left; }
+  th { background:var(--card); }
+  td.n { text-align:right; font-variant-numeric:tabular-nums; }
+  .tag { display:inline-block; font-size:.75rem; font-weight:600; padding:1px 8px; border-radius:10px;
+         border:1px solid currentColor; margin-left:6px; vertical-align:middle; }
+  .ok { color:var(--ok); } .part { color:var(--part); } .no { color:var(--no); }
+  .note { background:var(--card); border-left:4px solid var(--part); padding:10px 14px; border-radius:4px; }
+</style>
+</head>
+<body>
+
+<h1>Missing values and results — answers</h1>
+<p class="lead">Answers to the 16 items in <code>missing value and result.pdf</code>, prepared 2026-10-05.</p>
+
+<div class="note">
+<strong>Read this first.</strong> This laptop is not the machine that trained the models. The committed logs
+show training ran on another PC (user <code>MustafaJK</code>, RTX 3050). This laptop (RTX 5060) has no
+<code>progress.json</code>, no checkpoints and no regressor weights. So 4 items are fully answered here,
+4 are partly answered, and the rest need one script run on the training PC. The seeded evaluation
+(items 15–16) is coded but did not finish on this laptop.
+</div>
+
+<h2>Status at a glance</h2>
+<div class="tablewrap">
+<table>
+<tr><th>#</th><th>Item</th><th>Status</th></tr>
+<tr><td>1</td><td>Per-epoch training history</td><td class="part">Partly — B, C, F, G rebuilt from logs; A missing</td></tr>
+<tr><td>2</td><td>Model A epoch timing</td><td class="part">Estimate only</td></tr>
+<tr><td>3</td><td>Model A generator-update count</td><td class="no">Needs training PC</td></tr>
+<tr><td>4</td><td>Batch size for F and G</td><td class="part">Very likely 32, not confirmed</td></tr>
+<tr><td>5</td><td>Landmark regressor validation error</td><td class="no">Needs training PC (script ready)</td></tr>
+<tr><td>6</td><td>Regressor training time</td><td class="part">Upper bound only</td></tr>
+<tr><td>7</td><td>Native pixel size</td><td class="ok">Done</td></tr>
+<tr><td>8</td><td>Per-class image counts</td><td class="ok">Done</td></tr>
+<tr><td>9</td><td>Qualitative visual description</td><td class="ok">Done</td></tr>
+<tr><td>10–12</td><td>CPU, RAM, CUDA, cuDNN, driver, WSL, Windows</td><td class="no">This laptop only; training PC unverified</td></tr>
+<tr><td>13</td><td>Frozen dependency lists</td><td class="part">This laptop only</td></tr>
+<tr><td>14</td><td>MediaPipe version, dataset source and date</td><td class="part">Source known; version and date unconfirmed for training PC</td></tr>
+<tr><td>15</td><td>Fixed-seed evaluation pass</td><td class="no">Code written; run not completed</td></tr>
+<tr><td>16</td><td>Full per-class accuracy, all five models</td><td class="no">Code written; run not completed</td></tr>
+</table>
+</div>
+
+<h2>Files and numbers from the run</h2>
+
+<h3>1. Per-epoch training history <span class="tag part">partly done</span></h3>
+<p>All 50 epochs for B, C, F and G were rebuilt from the committed training logs into
+<code>reports/paper/results/history_from_logs/loss_history_{B,C,F,G}.csv</code>. New charts
+<code>reports/paper/charts/loss_model_F.png</code> and <code>loss_model_G.png</code> show the adversarial and
+landmark terms on separate panels. Model A's history is not recoverable here: its log was already
+overwritten in every commit.</p>
+
+<h3>2. Model A epoch timing <span class="tag part">estimate</span></h3>
+<p><code>driver.log</code> shows the last real A run from 12:30:13 to 19:46:59 on 2026-07-06, which is 26,206 s.
+Subtracting about 200 s of data loading gives roughly <strong>26,000 s, about 7.2 h, about 520 s per epoch</strong>.
+This assumes that launch ran all 50 epochs from scratch. The minimum–maximum range is not recoverable.</p>
+<p>Measured totals for the other four models, from their logs:</p>
+<div class="tablewrap">
+<table>
+<tr><th>Model</th><th>Mean s/epoch</th><th>Range (s)</th><th>Total s</th><th>Total h</th></tr>
+<tr><td>B</td><td class="n">538.8</td><td class="n">417.4–574.4</td><td class="n">26,941.4</td><td class="n">7.48</td></tr>
+<tr><td>C</td><td class="n">232.4</td><td class="n">224.5–261.9</td><td class="n">11,618.5</td><td class="n">3.23</td></tr>
+<tr><td>F</td><td class="n">239.2</td><td class="n">235.7–261.9</td><td class="n">11,962.5</td><td class="n">3.32</td></tr>
+<tr><td>G</td><td class="n">289.5</td><td class="n">283.2–308.4</td><td class="n">14,475.1</td><td class="n">4.02</td></tr>
+</table>
+</div>
+<p class="muted">G also spent 818 s training its auxiliary classifier before the GAN epochs.</p>
+
+<h3>3. Model A generator-update count <span class="tag no">needs training PC</span></h3>
+<p>Not recoverable here. For reference, Model B's log shows 2 generator updates per step in epochs 1–11
+and 3 in epochs 12–50. A may differ.</p>
+
+<h3>4. Batch size for F and G <span class="tag part">likely 32</span></h3>
+<p>The method suggested in the PDF will not work: <code>progress.json</code> for F and G does not record steps per epoch.
+Indirect evidence points to 32: Model C was launched by a committed script with no override (so 32), and F's
+epoch time is within 5% of C's on the same network (236 s against 226 s). At 32 that is 1,520 steps per epoch
+on 48,645 training images. Shell history on the training PC is the only direct proof.</p>
+
+<h3>5. Landmark regressor validation error <span class="tag no">needs training PC</span></h3>
+<p>The weights file and the landmark cache are not on this laptop. A ready script,
+<code>src/eval_landmark_regressor.py</code>, reports MSE and MAE in normalised units and pixels plus the
+constant-predictor baseline. It has not been run. Two facts for the manuscript:</p>
+<ul>
+<li>The regressor was trained only on images where MediaPipe found a hand: 27.45% of the 54,049.</li>
+<li>Its validation set is the last 10% of those images (Keras <code>validation_split</code>), not a separate seed-42 split.</li>
+</ul>
+
+<h3>6. Regressor training time <span class="tag part">upper bound</span></h3>
+<p>Model B's final launch loaded the regressor already trained, so it was trained in one of two earlier short
+launches (319 s and 526 s, each including about 3 minutes of data loading). That puts it
+<strong>under roughly 6 minutes</strong>. Landmark extraction itself took 3,000.6 s.</p>
+
+<h3>7. Native pixel size <span class="tag ok">done</span></h3>
+<p>The images are not all the same size. All are 8-bit grayscale PNG.</p>
+<div class="tablewrap">
+<table>
+<tr><th>Size</th><th>Images</th><th>Where</th></tr>
+<tr><td>64 × 64</td><td class="n">53,401</td><td>all classes</td></tr>
+<tr><td>256 × 256</td><td class="n">638</td><td>kaaf (320), meem (318)</td></tr>
+<tr><td>768 × 1024</td><td class="n">10</td><td>haa</td></tr>
+</table>
+</div>
+
+<h3>8. Per-class image counts <span class="tag ok">done</span></h3>
+<p>Total 54,049 images in 32 classes. Largest class is <code>ain</code> (2,114), smallest is <code>yaa</code> (1,293):
+an imbalance ratio of 1.63. Mean 1,689, standard deviation 184, coefficient of variation 0.109.</p>
+<div class="tablewrap">
+<table>
+<tr><th>Class</th><th>n</th><th>Class</th><th>n</th><th>Class</th><th>n</th><th>Class</th><th>n</th></tr>
+<tr><td>ain</td><td class="n">2114</td><td>gaaf</td><td class="n">1705</td><td>laam</td><td class="n">1832</td><td>taa</td><td class="n">1838</td></tr>
+<tr><td>al</td><td class="n">1343</td><td>ghain</td><td class="n">1977</td><td>meem</td><td class="n">1765</td><td>thaa</td><td class="n">1766</td></tr>
+<tr><td>aleff</td><td class="n">1672</td><td>ha</td><td class="n">1592</td><td>nun</td><td class="n">1819</td><td>thal</td><td class="n">1582</td></tr>
+<tr><td>bb</td><td class="n">1791</td><td>haa</td><td class="n">1526</td><td>ra</td><td class="n">1659</td><td>toot</td><td class="n">1791</td></tr>
+<tr><td>dal</td><td class="n">1634</td><td>jeem</td><td class="n">1552</td><td>saad</td><td class="n">1895</td><td>waw</td><td class="n">1371</td></tr>
+<tr><td>dha</td><td class="n">1723</td><td>kaaf</td><td class="n">1774</td><td>seen</td><td class="n">1638</td><td>ya</td><td class="n">1722</td></tr>
+<tr><td>dhad</td><td class="n">1670</td><td>khaa</td><td class="n">1607</td><td>sheen</td><td class="n">1507</td><td>yaa</td><td class="n">1293</td></tr>
+<tr><td>fa</td><td class="n">1955</td><td>la</td><td class="n">1746</td><td>ta</td><td class="n">1816</td><td>zay</td><td class="n">1374</td></tr>
+</table>
+</div>
+
+<h3>9. Qualitative description of the visual differences <span class="tag ok">done</span></h3>
+<p>From viewing <code>real_vs_generated.png</code> and the five <code>samples_*.png</code> grids:</p>
+<ul>
+<li><strong>Models A and B (noise only).</strong> Outputs are hand-like, with recognisable pose for open-hand
+letters such as <em>al</em>, <em>bb</em>, <em>la</em> and <em>sheen</em>. Fingers are soft and often merged or missing.
+Closed-fist letters (<em>fa</em>, <em>gaaf</em>, <em>ha</em>, <em>khaa</em>) collapse into fragmentary dark masses.
+Backgrounds are uniformly light. Pose varies widely between samples of the same letter.
+B shows no visible improvement over A.</li>
+<li><strong>Model C.</strong> Outputs follow the reference hand's silhouette with sharp contours. Periodic
+checkerboard artefacts appear in the background: scattered patches on light backgrounds, and across the whole
+frame on dark or textured ones (<em>dha</em>, <em>ghain</em>, <em>ha</em>, <em>khaa</em>, <em>laam</em>, <em>thal</em>).</li>
+<li><strong>Model F.</strong> Same structure as C. The artefacts are largely gone on light backgrounds but
+remain on dark or textured ones.</li>
+<li><strong>Model G.</strong> The cleanest of the five. Only faint residual speckle remains on a few letters
+(<em>ha</em>, <em>khaa</em>, <em>laam</em>, <em>thal</em>, <em>aleff</em>).</li>
+<li><strong>C, F and G together.</strong> The eight samples per letter are visually near-identical. The noise
+vector has little visible effect, so variety comes from the structure map, not from the noise.</li>
+</ul>
+
+<h2>Environment and software</h2>
+
+<h3>10–12. Hardware and versions <span class="tag no">this laptop only</span></h3>
+<p>These values describe this laptop, not the PC that trained the models.</p>
+<div class="tablewrap">
+<table>
+<tr><th></th><th>This laptop</th></tr>
+<tr><td>CPU / RAM</td><td>Intel Core i7-14650HX, 15.7 GB</td></tr>
+<tr><td>GPU / driver</td><td>RTX 5060 Laptop 8 GB, driver 610.62</td></tr>
+<tr><td>Windows</td><td>11 Pro, build 26200</td></tr>
+<tr><td>WSL</td><td>2.7.10.0, Ubuntu 26.04 LTS, kernel 6.18.33.2</td></tr>
+<tr><td>Python / TensorFlow / Keras</td><td>3.11.15 / 2.21.0 / 3.15.0</td></tr>
+<tr><td>CUDA / cuDNN wheels loaded</td><td>CUDA 12.9.x, cuDNN 9.24.0.43</td></tr>
+</table>
+</div>
+<p>Two clues about the provisional line in the manuscript:</p>
+<ul>
+<li>"CUDA 12.5.1, cuDNN 9" is exactly what TensorFlow 2.21 reports as its build-time versions. That line may be
+the build string, not the libraries actually loaded.</li>
+<li>A comment in <code>src/train_model_b.py</code> says "avoids OOM at 16 GB", which conflicts with "32 GB RAM".</li>
+</ul>
+
+<h3>13. Frozen dependency lists <span class="tag part">this laptop only</span></h3>
+<p>Saved as <code>reports/paper/results/seed42/requirements_tf_eval_machine.txt</code> and
+<code>requirements_mp_eval_machine.txt</code>. Protobuf is 7.35.1 in the TensorFlow environment and 4.25.9 in the
+MediaPipe one, matching the "4.x vs 7.x" note in the code. The training PC's lists still need to be captured.</p>
+
+<h3>14. MediaPipe version and dataset source <span class="tag part">partly done</span></h3>
+<p>MediaPipe is 0.10.14 on this laptop; the training PC's version is unconfirmed. The dataset is
+<code>pain/ArASL_Database_Grayscale</code> on Hugging Face. The local parquet file is dated 2026-06-29;
+the download date on the training PC is unknown.</p>
+
+<h2>Additional runs</h2>
+
+<h3>15–16. Seeded evaluation and full per-class accuracy <span class="tag no">not completed</span></h3>
+<p>The code is written. <code>src/paper_eval.py</code> now seeds everything, trains one classifier, saves it, and
+prints its path, modification time, seed and samples per class. <code>src/confusion_matrix.py</code> loads that same
+classifier and writes the full 32-value vector per model to <code>per_class_accuracy.json</code> and <code>.csv</code>.</p>
+<p>The run failed twice on this laptop:</p>
+<ul>
+<li><strong>GPU:</strong> this TensorFlow build cannot run convolutions on the RTX 5060.</li>
+<li><strong>CPU:</strong> it trained three epochs normally (validation accuracy 0.967, about 630 s each), then was
+stopped because the system ran low on memory. Nothing was saved.</li>
+</ul>
+<p>A third CPU attempt was stopped the same way after 6 of 12 epochs. Its per-epoch numbers were identical to
+the earlier attempt, so the seed makes the classifier reproducible. The whole pipeline (train, save, reload in
+the second script, per-class output) was also checked end to end on a small 80-images-per-class sample; the
+full-data results are still missing.</p>
+
+<h2>What to run on the training PC</h2>
+<pre><code>bash collect_training_machine_facts.sh
+cd src &amp;&amp; python -u paper_eval.py | tee ../reports/paper/logs/paper_eval_seed42.log
+python -u confusion_matrix.py | tee ../reports/paper/logs/confusion_seed42.log</code></pre>
+<p>The first script copies the five histories, summarises Model A's timing and update counts, evaluates the
+regressor against a constant baseline, records the environment and writes both <code>pip freeze</code> files.
+It has not been run, because the files it reads are not on this laptop. The two evaluation commands overwrite
+the existing <code>metrics.json</code> and confusion outputs unless <code>ARASL_EVAL_OUT</code> points to another folder.</p>
+
+<h2>Files added or changed</h2>
+<ul>
+<li><code>src/paper_eval.py</code>, <code>src/confusion_matrix.py</code> — seeded, shared classifier, full per-class output</li>
+<li><code>src/eval_landmark_regressor.py</code> — regressor validation error and baseline</li>
+<li><code>src/paper_charts_from_logs.py</code> — F and G loss charts</li>
+<li><code>collect_training_machine_facts.sh</code> — one-shot collector for the training PC</li>
+<li><code>reports/paper/results/history_from_logs/</code> — four loss histories and <code>timing_summary.json</code></li>
+<li><code>reports/paper/charts/loss_model_F.png</code>, <code>loss_model_G.png</code></li>
+<li><code>reports/paper/results/seed42/</code> — this laptop's two dependency lists</li>
+</ul>
+
+
+</body>
+</html>
