@@ -36,6 +36,7 @@ CLF_PATH = os.path.join(RES_DIR, f"reference_classifier_seed{EVAL_SEED}.keras")
 RUNS = {"A": C.DRIVE_BASE_A, "B": C.DRIVE_BASE_B, "C": C.DRIVE_BASE_C,
         "F": C.DRIVE_BASE_F, "G": C.DRIVE_BASE_G}
 N_PER_CLASS = 40
+CLF_EPOCHS = 12
 
 
 def build_classifier(num_classes):
@@ -54,19 +55,42 @@ def get_reference_classifier(X_tr, y_tr, X_ev, y_ev, num_classes, n_per_class):
 
     Set ARASL_RETRAIN_CLF=1 to force a retrain. Prints the provenance line that
     both eval logs must share: checkpoint path, mtime, seed, samples per class.
+
+    Training saves model + optimizer state after every epoch, so an interrupted
+    run resumes from the last finished epoch instead of starting over. A resumed
+    run is re-seeded with EVAL_SEED + epochs_done, so it is repeatable but not
+    bit-identical to an uninterrupted one.
     """
     tf.keras.utils.set_random_seed(EVAL_SEED)
+    partial, partial_meta = CLF_PATH + ".partial.keras", CLF_PATH + ".partial.json"
     if os.path.exists(CLF_PATH) and os.environ.get("ARASL_RETRAIN_CLF", "0") != "1":
         clf = tf.keras.models.load_model(CLF_PATH)
         status = "loaded"
     else:
-        clf = build_classifier(num_classes)
-        clf.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
-                    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                    metrics=["accuracy"])
-        clf.fit(X_tr, y_tr, epochs=12, batch_size=64, validation_data=(X_ev, y_ev), verbose=2)
+        done = 0
+        if os.path.exists(partial) and os.path.exists(partial_meta):
+            done = json.load(open(partial_meta))["epochs_done"]
+            clf = tf.keras.models.load_model(partial)
+            tf.keras.utils.set_random_seed(EVAL_SEED + done)
+            print(f"resuming reference classifier from epoch {done}/{CLF_EPOCHS}")
+        else:
+            clf = build_classifier(num_classes)
+            clf.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
+                        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                        metrics=["accuracy"])
+
+        def _save_epoch(epoch, logs):
+            clf.save(partial)
+            json.dump({"epochs_done": epoch + 1, "resumed_from": done}, open(partial_meta, "w"))
+
+        clf.fit(X_tr, y_tr, epochs=CLF_EPOCHS, initial_epoch=done, batch_size=64,
+                validation_data=(X_ev, y_ev), verbose=2,
+                callbacks=[tf.keras.callbacks.LambdaCallback(on_epoch_end=_save_epoch)])
         clf.save(CLF_PATH)
-        status = "trained"
+        for f in (partial, partial_meta):
+            if os.path.exists(f):
+                os.remove(f)
+        status = "trained" if done == 0 else f"trained, resumed from epoch {done}"
     ref_acc = float(clf.evaluate(X_ev, y_ev, verbose=0)[1])
     mtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(CLF_PATH)))
     print(f"reference classifier ({status}): path={CLF_PATH} mtime={mtime} "
