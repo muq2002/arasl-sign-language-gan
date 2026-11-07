@@ -1,0 +1,38 @@
+extracting landmarks for 54,049 images from /home/mktad/arasl-work/repro_B/images_128.npy
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1794064566.034867    9610 gl_context_egl.cc:85] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1794064566.060477    9722 gl_context.cc:357] GL version: 3.2 (OpenGL ES 3.2 Mesa 26.0.3-1ubuntu1), renderer: llvmpipe (LLVM 21.1.8, 256 bits)
+I0000 00:00:1794064566.065517    9610 gl_context_egl.cc:85] Successfully initialized EGL. Major : 1 Minor: 5
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+I0000 00:00:1794064566.075504    9743 gl_context.cc:357] GL version: 3.2 (OpenGL ES 3.2 Mesa 26.0.3-1ubuntu1), renderer: llvmpipe (LLVM 21.1.8, 256 bits)
+W0000 00:00:1794064566.076013    9665 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+
+MediaPipe:   0%|          | 0/54049 [00:00<?, ?it/s]W0000 00:00:1794064566.085252    9724 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1794064566.094800    9669 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1794064566.104362    9732 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+
+MediaPipe:   0%|          | 3/54049 [00:00<1:10:48, 12.72it/s]/home/mktad/miniconda3/envs/mp_extract/lib/python3.11/site-packages/google/protobuf/symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+
+MediaPipe:  37%|███▋      | 19936/54049 [18:22<28:06, 20.23it/s]extracting landmarks for 54,049 images from /home/mktad/arasl-work/repro_B/images_128.npy
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1794066691.190569     431 gl_context_egl.cc:85] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1794066691.207309     555 gl_context.cc:357] GL version: 3.2 (OpenGL ES 3.2 Mesa 26.0.3-1ubuntu1), renderer: llvmpipe (LLVM 21.1.8, 256 bits)
+I0000 00:00:1794066691.210964     431 gl_context_egl.cc:85] Successfully initialized EGL. Major : 1 Minor: 5
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+I0000 00:00:1794066691.222042     576 gl_context.cc:357] GL version: 3.2 (OpenGL ES 3.2 Mesa 26.0.3-1ubuntu1), renderer: llvmpipe (LLVM 21.1.8, 256 bits)
+W0000 00:00:1794066691.227961     494 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+resuming from image 15000/54049
+W0000 00:00:1794066691.234927     571 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+
+MediaPipe:  28%|██▊       | 15000/54049 [00:00<?, ?it/s]W0000 00:00:1794066691.247503     502 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1794066691.251830     561 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+/home/mktad/miniconda3/envs/mp_extract/lib/python3.11/site-packages/google/protobuf/symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+
+MediaPipe: 100%|██████████| 54049/54049 [40:42<00:00, 15.99it/s]
+saved /home/mktad/arasl-work/repro_B/landmarks_128px.npy  detection 27.45%  in 2442s

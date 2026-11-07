@@ -57,7 +57,10 @@ def _read(res):
 def main():
     if not os.path.exists(IMAGES):
         raise SystemExit(f"missing {IMAGES} - run src/dump_images_for_lm.py first")
-    imgs = np.load(IMAGES).astype(np.float32)  # (N,128,128,1) in [-1,1]
+    # memory-mapped float16 (N,128,128,1) in [-1,1]; each image is cast to float32
+    # when used, which gives the same values as casting the whole array up front
+    # without holding a 3.5 GB float32 copy for the entire run.
+    imgs = np.load(IMAGES, mmap_mode="r")
     n = len(imgs)
     print(f"extracting landmarks for {n:,} images from {IMAGES}")
     H = mp.solutions.hands.Hands
@@ -80,7 +83,7 @@ def main():
         out = np.zeros((n, 63), np.float32)
     t0 = time.time()
     for i in tqdm(range(start, n), desc="MediaPipe", initial=start, total=n):
-        u8 = ((imgs[i, :, :, 0] + 1) * 127.5).clip(0, 255).astype(np.uint8)
+        u8 = ((imgs[i, :, :, 0].astype(np.float32) + 1) * 127.5).clip(0, 255).astype(np.uint8)
         r = _read(hi.process(_prep(u8, MP_DETECT_SIZE, _skintone)))
         if r is None:
             r = _read(hi.process(_prep(u8, MP_DETECT_SIZE_FB, _skintone)))

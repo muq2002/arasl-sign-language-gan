@@ -32,24 +32,8 @@ VALID_EXT = (".png", ".jpg", ".jpeg")
 # ── data loading (128px, deterministic shuffle, held-out split) ───────────────
 def load_images_128(data_path):
     import cv2  # noqa: F401  (imported later for structure maps)
-    imgs, labs, errs = [], [], 0
-    print(f"Loading from {data_path} (resize {IMG_SIZE}x{IMG_SIZE})")
-    for sub in tqdm(sorted(os.listdir(data_path)), desc="Classes"):
-        spath = os.path.join(data_path, sub)
-        if not os.path.isdir(spath):
-            continue
-        for fn in sorted(os.listdir(spath)):
-            if not fn.lower().endswith(VALID_EXT):
-                continue
-            try:
-                raw = tf.io.read_file(os.path.join(spath, fn))
-                img = tf.image.decode_png(raw, channels=1)
-                img = tf.image.resize(img, [IMG_SIZE, IMG_SIZE])
-                img = (tf.cast(img, tf.float32) - 127.5) / 127.5
-                imgs.append(img.numpy()); labs.append(sub)
-            except Exception:
-                errs += 1
-    images = np.asarray(imgs, dtype=np.float16)   # float16 to halve RAM (~3.4->1.7 GB)
+    from data import read_image_folder, permute_rows_inplace
+    images, labs, errs = read_image_folder(data_path, np.float16)   # float16 to halve RAM (~3.4->1.7 GB)
     cap = int(os.environ.get("ARASL_MAX_PER_CLASS", 0))
     if cap > 0:
         labs_arr = np.asarray(labs); keep = []
@@ -64,7 +48,7 @@ def load_images_128(data_path):
     print(f"Loaded {len(images)} images, {errs} errors, {num_classes} classes")
     rng = np.random.default_rng(RANDOM_SEED)
     perm = rng.permutation(len(images))
-    images, labels_int = images[perm], labels_int[perm]
+    images, labels_int = permute_rows_inplace(images, perm), labels_int[perm]
     n_eval = max(num_classes * MIN_EVAL_PER_CLS, int(EVAL_FRACTION * len(images)))
     return images[:-n_eval], labels_int[:-n_eval], images[-n_eval:], labels_int[-n_eval:], enc
 

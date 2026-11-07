@@ -34,14 +34,14 @@
 <body>
 
 <h1>Missing values and results — answers</h1>
-<p class="lead">Answers to the 16 items in <code>missing value and result.pdf</code>, prepared 2026-10-05.</p>
+<p class="lead">Answers to the 16 items in <code>missing value and result.pdf</code>, prepared 2026-10-05, updated 2026-11-07.</p>
 
 <div class="note">
 <strong>Read this first.</strong> This laptop is not the machine that trained the models. The committed logs
 show training ran on another PC (user <code>MustafaJK</code>, RTX 3050). This laptop (RTX 5060) has no
-<code>progress.json</code>, no checkpoints and no regressor weights. So 4 items are fully answered here,
-4 are partly answered, and the rest need one script run on the training PC. The seeded evaluation
-(items 15–16) is coded but did not finish on this laptop.
+<code>progress.json</code>, no checkpoints and no regressor weights. 5 items are fully answered here
+(7, 8, 9, 15, 16), 2 are answered by a faithful reproduction on this laptop (5, 6), 5 are partly answered,
+and the rest need one script run on the training PC.
 </div>
 
 <h2>Status at a glance</h2>
@@ -52,16 +52,16 @@ show training ran on another PC (user <code>MustafaJK</code>, RTX 3050). This la
 <tr><td>2</td><td>Model A epoch timing</td><td class="part">Estimate only</td></tr>
 <tr><td>3</td><td>Model A generator-update count</td><td class="no">Needs training PC</td></tr>
 <tr><td>4</td><td>Batch size for F and G</td><td class="part">Very likely 32, not confirmed</td></tr>
-<tr><td>5</td><td>Landmark regressor validation error</td><td class="no">Needs training PC (script ready)</td></tr>
-<tr><td>6</td><td>Regressor training time</td><td class="part">Upper bound only</td></tr>
+<tr><td>5</td><td>Landmark regressor validation error</td><td class="ok">Done by reproduction on this laptop</td></tr>
+<tr><td>6</td><td>Regressor training time</td><td class="part">Reproduction (CPU) plus bound for the original</td></tr>
 <tr><td>7</td><td>Native pixel size</td><td class="ok">Done</td></tr>
 <tr><td>8</td><td>Per-class image counts</td><td class="ok">Done</td></tr>
 <tr><td>9</td><td>Qualitative visual description</td><td class="ok">Done</td></tr>
 <tr><td>10–12</td><td>CPU, RAM, CUDA, cuDNN, driver, WSL, Windows</td><td class="no">This laptop only; training PC unverified</td></tr>
 <tr><td>13</td><td>Frozen dependency lists</td><td class="part">This laptop only</td></tr>
 <tr><td>14</td><td>MediaPipe version, dataset source and date</td><td class="part">Source known; version and date unconfirmed for training PC</td></tr>
-<tr><td>15</td><td>Fixed-seed evaluation pass</td><td class="no">Code written; run not completed</td></tr>
-<tr><td>16</td><td>Full per-class accuracy, all five models</td><td class="no">Code written; run not completed</td></tr>
+<tr><td>15</td><td>Fixed-seed evaluation pass</td><td class="ok">Done (this laptop, seed 42)</td></tr>
+<tr><td>16</td><td>Full per-class accuracy, all five models</td><td class="ok">Done</td></tr>
 </table>
 </div>
 
@@ -100,19 +100,47 @@ Indirect evidence points to 32: Model C was launched by a committed script with 
 epoch time is within 5% of C's on the same network (236 s against 226 s). At 32 that is 1,520 steps per epoch
 on 48,645 training images. Shell history on the training PC is the only direct proof.</p>
 
-<h3>5. Landmark regressor validation error <span class="tag no">needs training PC</span></h3>
-<p>The weights file and the landmark cache are not on this laptop. A ready script,
-<code>src/eval_landmark_regressor.py</code>, reports MSE and MAE in normalised units and pixels plus the
-constant-predictor baseline. It has not been run. Two facts for the manuscript:</p>
+<h3>5. Landmark regressor validation error <span class="tag ok">done by reproduction</span></h3>
+<p>The original weights are not on this laptop, so the regressor was <strong>reproduced</strong> here on 2026-11-07
+with the repository's own code: landmarks re-extracted with MediaPipe 0.10.14, then the regressor trained with
+<code>train_regressor()</code> from <code>src/train_model_b.py</code> (seed 42, same 20-epoch schedule and callbacks).</p>
+<p>The reproduction matches the original pipeline closely: hand detection is <strong>27.45%</strong> (14,834 of
+54,049 images), exactly the rate the training PC recorded. Validation set: the last 10% of the detected images
+(1,484 images; 13,350 for training), as Keras <code>validation_split</code> does in the original.</p>
+<div class="tablewrap">
+<table>
+<tr><th>Validation error</th><th>Regressor</th><th>Constant baseline (training mean)</th><th>Reduction</th></tr>
+<tr><td>MSE, normalised (all 63 values)</td><td class="n">0.00295</td><td class="n">0.00767</td><td class="n">61%</td></tr>
+<tr><td>MAE, normalised (all 63 values)</td><td class="n">0.0318</td><td class="n">0.0561</td><td class="n">43%</td></tr>
+<tr><td>MSE, pixels² (x, y only)</td><td class="n">72.6</td><td class="n">188.5</td><td class="n">61%</td></tr>
+<tr><td>MAE, pixels (x, y only)</td><td class="n">6.03</td><td class="n">10.74</td><td class="n">44%</td></tr>
+<tr><td>Mean keypoint distance, pixels</td><td class="n">9.49</td><td class="n">16.87</td><td class="n">44%</td></tr>
+</table>
+</div>
 <ul>
-<li>The regressor was trained only on images where MediaPipe found a hand: 27.45% of the 54,049.</li>
-<li>Its validation set is the last 10% of those images (Keras <code>validation_split</code>), not a separate seed-42 split.</li>
+<li><strong>Reading it:</strong> on a 128 × 128 image, a predicted keypoint lands on average 9.5 px from the
+MediaPipe keypoint, against 16.9 px for always predicting the average hand. The regressor clearly learned
+hand-specific structure, but its error is far from zero, which limits how precise the landmark supervision for B, F
+and G can be.</li>
+<li><strong>Pixel units:</strong> pixel errors use only x and y (scaled by 128); MediaPipe's z has no pixel meaning.</li>
+<li><strong>Consistency check:</strong> the original B training log shows a landmark loss of about 0.003 on generated
+images, the same scale as this validation MSE.</li>
+<li><strong>Caveat for the manuscript:</strong> these numbers come from a retrained regressor, not the exact weights used
+for F and G. Running <code>collect_training_machine_facts.sh</code> on the training PC gives the original weights' numbers.</li>
 </ul>
+<p class="muted">File: <code>reports/paper/results/landmark_regressor_eval_repro.json</code>; log:
+<code>reports/paper/logs/repro_landmark_regressor.log</code>.</p>
 
-<h3>6. Regressor training time <span class="tag part">upper bound</span></h3>
-<p>Model B's final launch loaded the regressor already trained, so it was trained in one of two earlier short
-launches (319 s and 526 s, each including about 3 minutes of data loading). That puts it
-<strong>under roughly 6 minutes</strong>. Landmark extraction itself took 3,000.6 s.</p>
+<h3>6. Regressor training time <span class="tag part">reproduction plus bound</span></h3>
+<ul>
+<li><strong>Reproduction on this laptop (CPU):</strong> 560.9 s (9.3 min) for 20 epochs. The learning rate was halved
+at epochs 9 and 18, and the best epoch was 19.</li>
+<li><strong>Original on the training PC (GPU):</strong> not recorded. Model B's final launch loaded the regressor already
+trained, so it was trained in one of two earlier short launches (319 s and 526 s, each including about 3 minutes of
+data loading). That puts it <strong>under roughly 6 minutes</strong>.</li>
+<li><strong>Landmark extraction:</strong> 3,000.6 s on the training PC; on this laptop the run was interrupted once; the resumed
+part took 2,442 s for the last 39,049 images, which scales to about 3,400 s for all 54,049.</li>
+</ul>
 
 <h3>7. Native pixel size <span class="tag ok">done</span></h3>
 <p>The images are not all the same size. All are 8-bit grayscale PNG.</p>
@@ -195,29 +223,94 @@ the download date on the training PC is unknown.</p>
 
 <h2>Additional runs</h2>
 
-<h3>15–16. Seeded evaluation and full per-class accuracy <span class="tag no">not completed</span></h3>
-<p>The code is written. <code>src/paper_eval.py</code> now seeds everything, trains one classifier, saves it, and
-prints its path, modification time, seed and samples per class. <code>src/confusion_matrix.py</code> loads that same
-classifier and writes the full 32-value vector per model to <code>per_class_accuracy.json</code> and <code>.csv</code>.</p>
-<p>The run failed twice on this laptop:</p>
+<h3>15. Fixed-seed evaluation pass <span class="tag ok">done</span></h3>
+<p>Run on this laptop (CPU) on 2026-11-07 with seed 42. One reference classifier was trained, saved and used by
+<em>both</em> <code>paper_eval.py</code> and <code>confusion_matrix.py</code>. Both logs print the same provenance line:</p>
+<pre><code>path=reports/paper/results/seed42/reference_classifier_seed42.keras
+mtime=2026-11-07 18:06:09   seed=42   samples_per_class=40 (paper_eval) / 60 (confusion_matrix)
+reference classifier on real held-out = 0.9754</code></pre>
+<div class="tablewrap">
+<table>
+<tr><th>Model</th><th>Recognition</th><th>Diversity</th><th>SSIM</th><th>Held-out recognition</th><th>Generalisation gap</th><th>Confusion-matrix accuracy</th></tr>
+<tr><td>A</td><td class="n">0.6211</td><td class="n">0.1779</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">0.6323</td></tr>
+<tr><td>B</td><td class="n">0.6484</td><td class="n">0.1926</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">0.6594</td></tr>
+<tr><td>C</td><td class="n">0.7172</td><td class="n">0.4134</td><td class="n">0.7521</td><td class="n">0.6969</td><td class="n">0.0203</td><td class="n">0.7224</td></tr>
+<tr><td>F</td><td class="n">0.8609</td><td class="n">0.3722</td><td class="n">0.8249</td><td class="n">0.8370</td><td class="n">0.0240</td><td class="n">0.8656</td></tr>
+<tr><td>G</td><td class="n">0.9383</td><td class="n">0.4010</td><td class="n">0.8251</td><td class="n">0.9062</td><td class="n">0.0321</td><td class="n">0.9380</td></tr>
+</table>
+</div>
 <ul>
-<li><strong>GPU:</strong> this TensorFlow build cannot run convolutions on the RTX 5060.</li>
-<li><strong>CPU:</strong> it trained three epochs normally (validation accuracy 0.967, about 630 s each), then was
-stopped because the system ran low on memory. Nothing was saved.</li>
+<li><strong>Why two recognition columns:</strong> both come from the same classifier, but <code>paper_eval.py</code> scores
+40 samples per class and <code>confusion_matrix.py</code> scores 60, with different noise seeds. They differ by less than 0.012.</li>
+<li><strong>New numbers replace the old:</strong> they are slightly lower than the earlier unseeded logs (for example G
+0.9383 against 0.9461), because the classifier is a different instance. The ranking A &lt; B &lt; C &lt; F &lt; G is unchanged.
+The manuscript's headline table and Table 17 should both take their values from this run.</li>
+<li><strong>Consistency check:</strong> diversity for A, B, F and G matches the original run to four decimals, so the
+generators behave identically on this laptop.</li>
+<li><strong>Reproducibility note:</strong> training was interrupted by low memory and resumed from saved epoch 11
+(re-seeded with 42 + 11). Re-running gives the same result, but it is not bit-identical to an uninterrupted run.</li>
 </ul>
-<p>A third CPU attempt was stopped the same way after 6 of 12 epochs. Its per-epoch numbers were identical to
-the earlier attempt, so the seed makes the classifier reproducible. The whole pipeline (train, save, reload in
-the second script, per-class output) was also checked end to end on a small 80-images-per-class sample; the
-full-data results are still missing.</p>
+<p class="muted">Files: <code>reports/paper/results/seed42/metrics.json</code>, <code>metrics.csv</code>,
+<code>confusion_[A–G].png</code>, <code>confusion_summary.json</code>; logs in <code>reports/paper/logs/*_seed42.log</code>.</p>
+
+<h3>16. Full per-class accuracy, all five models <span class="tag ok">done</span></h3>
+<p>Fraction of the 60 generated images per letter that the reference classifier assigned to the intended letter
+(from <code>reports/paper/results/seed42/per_class_accuracy.csv</code>).</p>
+<div class="tablewrap">
+<table>
+<tr><th>Class</th><th>A</th><th>B</th><th>C</th><th>F</th><th>G</th></tr>
+<tr><td>ain</td><td class="n">0.833</td><td class="n">0.800</td><td class="n">0.667</td><td class="n">0.850</td><td class="n">0.833</td></tr>
+<tr><td>al</td><td class="n">0.967</td><td class="n">0.967</td><td class="n">0.967</td><td class="n">0.967</td><td class="n">0.983</td></tr>
+<tr><td>aleff</td><td class="n">0.417</td><td class="n">0.367</td><td class="n">0.333</td><td class="n">0.650</td><td class="n">0.833</td></tr>
+<tr><td>bb</td><td class="n">0.817</td><td class="n">0.783</td><td class="n">0.517</td><td class="n">0.817</td><td class="n">0.883</td></tr>
+<tr><td>dal</td><td class="n">0.633</td><td class="n">0.383</td><td class="n">0.883</td><td class="n">0.883</td><td class="n">0.933</td></tr>
+<tr><td>dha</td><td class="n">0.717</td><td class="n">0.583</td><td class="n">0.667</td><td class="n">0.833</td><td class="n">0.933</td></tr>
+<tr><td>dhad</td><td class="n">0.817</td><td class="n">0.850</td><td class="n">0.767</td><td class="n">0.833</td><td class="n">0.933</td></tr>
+<tr><td>fa</td><td class="n">0.450</td><td class="n">0.683</td><td class="n">0.483</td><td class="n">0.783</td><td class="n">0.883</td></tr>
+<tr><td>gaaf</td><td class="n">0.100</td><td class="n">0.300</td><td class="n">0.533</td><td class="n">0.833</td><td class="n">0.933</td></tr>
+<tr><td>ghain</td><td class="n">0.333</td><td class="n">0.467</td><td class="n">0.700</td><td class="n">0.883</td><td class="n">0.983</td></tr>
+<tr><td>ha</td><td class="n">0.733</td><td class="n">0.383</td><td class="n">0.400</td><td class="n">0.567</td><td class="n">0.933</td></tr>
+<tr><td>haa</td><td class="n">0.700</td><td class="n">0.567</td><td class="n">0.767</td><td class="n">0.883</td><td class="n">0.933</td></tr>
+<tr><td>jeem</td><td class="n">0.250</td><td class="n">0.500</td><td class="n">0.783</td><td class="n">0.900</td><td class="n">0.967</td></tr>
+<tr><td>kaaf</td><td class="n">0.483</td><td class="n">0.617</td><td class="n">0.617</td><td class="n">0.783</td><td class="n">0.917</td></tr>
+<tr><td>khaa</td><td class="n">0.500</td><td class="n">0.617</td><td class="n">0.850</td><td class="n">0.950</td><td class="n">1.000</td></tr>
+<tr><td>la</td><td class="n">0.767</td><td class="n">0.883</td><td class="n">0.833</td><td class="n">0.867</td><td class="n">0.967</td></tr>
+<tr><td>laam</td><td class="n">0.767</td><td class="n">0.750</td><td class="n">0.817</td><td class="n">0.833</td><td class="n">0.883</td></tr>
+<tr><td>meem</td><td class="n">0.817</td><td class="n">0.800</td><td class="n">0.650</td><td class="n">0.850</td><td class="n">0.950</td></tr>
+<tr><td>nun</td><td class="n">0.817</td><td class="n">0.850</td><td class="n">0.867</td><td class="n">0.983</td><td class="n">0.983</td></tr>
+<tr><td>ra</td><td class="n">0.617</td><td class="n">0.633</td><td class="n">0.633</td><td class="n">0.833</td><td class="n">0.917</td></tr>
+<tr><td>saad</td><td class="n">0.650</td><td class="n">0.717</td><td class="n">0.633</td><td class="n">0.883</td><td class="n">0.967</td></tr>
+<tr><td>seen</td><td class="n">0.850</td><td class="n">0.800</td><td class="n">0.883</td><td class="n">0.983</td><td class="n">1.000</td></tr>
+<tr><td>sheen</td><td class="n">0.900</td><td class="n">0.933</td><td class="n">0.983</td><td class="n">1.000</td><td class="n">1.000</td></tr>
+<tr><td>ta</td><td class="n">0.800</td><td class="n">0.867</td><td class="n">0.900</td><td class="n">0.950</td><td class="n">1.000</td></tr>
+<tr><td>taa</td><td class="n">0.700</td><td class="n">0.600</td><td class="n">0.633</td><td class="n">0.833</td><td class="n">0.917</td></tr>
+<tr><td>thaa</td><td class="n">0.167</td><td class="n">0.433</td><td class="n">0.583</td><td class="n">0.833</td><td class="n">0.933</td></tr>
+<tr><td>thal</td><td class="n">0.450</td><td class="n">0.517</td><td class="n">0.833</td><td class="n">0.933</td><td class="n">1.000</td></tr>
+<tr><td>toot</td><td class="n">0.600</td><td class="n">0.733</td><td class="n">0.750</td><td class="n">0.917</td><td class="n">0.967</td></tr>
+<tr><td>waw</td><td class="n">0.533</td><td class="n">0.633</td><td class="n">0.767</td><td class="n">0.917</td><td class="n">0.917</td></tr>
+<tr><td>ya</td><td class="n">0.867</td><td class="n">0.700</td><td class="n">0.783</td><td class="n">0.933</td><td class="n">0.900</td></tr>
+<tr><td>yaa</td><td class="n">0.950</td><td class="n">0.817</td><td class="n">0.983</td><td class="n">1.000</td><td class="n">1.000</td></tr>
+<tr><td>zay</td><td class="n">0.233</td><td class="n">0.567</td><td class="n">0.650</td><td class="n">0.733</td><td class="n">0.833</td></tr>
+<tr><th>mean</th><th class="n">0.632</th><th class="n">0.659</th><th class="n">0.722</th><th class="n">0.866</th><th class="n">0.938</th></tr>
+</table>
+</div>
+<p>Three largest confusions per model (intended → predicted, share of that letter's samples):</p>
+<div class="tablewrap">
+<table>
+<tr><th>Model</th><th>Top confusions</th></tr>
+<tr><td>A</td><td>gaaf → fa (0.483); thaa → taa (0.433); ghain → ain (0.383)</td></tr>
+<tr><td>B</td><td>gaaf → ha (0.300); ha → fa (0.267); haa → khaa (0.250)</td></tr>
+<tr><td>C</td><td>kaaf → seen (0.200); aleff → khaa (0.183); saad → ya (0.183)</td></tr>
+<tr><td>F</td><td>kaaf → seen (0.217); ha → kaaf (0.100); ra → toot (0.100)</td></tr>
+<tr><td>G</td><td>aleff → nun (0.067); kaaf → seen (0.067); aleff → ghain (0.050)</td></tr>
+</table>
+</div>
 
 <h2>What to run on the training PC</h2>
-<pre><code>bash collect_training_machine_facts.sh
-cd src &amp;&amp; python -u paper_eval.py | tee ../reports/paper/logs/paper_eval_seed42.log
-python -u confusion_matrix.py | tee ../reports/paper/logs/confusion_seed42.log</code></pre>
-<p>The first script copies the five histories, summarises Model A's timing and update counts, evaluates the
+<pre><code>bash collect_training_machine_facts.sh</code></pre>
+<p>This copies the five histories, summarises Model A's timing and update counts, evaluates the original
 regressor against a constant baseline, records the environment and writes both <code>pip freeze</code> files.
-It has not been run, because the files it reads are not on this laptop. The two evaluation commands overwrite
-the existing <code>metrics.json</code> and confusion outputs unless <code>ARASL_EVAL_OUT</code> points to another folder.</p>
+It has not been run, because the files it reads are not on this laptop.</p>
 
 <h2>Files added or changed</h2>
 <ul>
@@ -227,7 +320,11 @@ the existing <code>metrics.json</code> and confusion outputs unless <code>ARASL_
 <li><code>collect_training_machine_facts.sh</code> — one-shot collector for the training PC</li>
 <li><code>reports/paper/results/history_from_logs/</code> — four loss histories and <code>timing_summary.json</code></li>
 <li><code>reports/paper/charts/loss_model_F.png</code>, <code>loss_model_G.png</code></li>
-<li><code>reports/paper/results/seed42/</code> — this laptop's two dependency lists</li>
+<li><code>reports/paper/results/seed42/</code> — seeded evaluation results, per-class accuracy, confusion matrices, saved classifier, this laptop's dependency lists</li>
+<li><code>src/data.py</code>, <code>src/train_model_c.py</code> — image loader writes into one preallocated array (same values, about half the peak memory)</li>
+<li><code>run_missing_values.sh</code> — resumable run for items 5, 6, 15 and 16</li>
+<li><code>experiments/scripts/extract_lm_full.py</code> — reads images memory-mapped (same values, far less memory)</li>
+<li><code>reports/paper/results/landmark_regressor_eval_repro.json</code> — reproduced regressor error and baseline</li>
 </ul>
 
 

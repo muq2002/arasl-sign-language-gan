@@ -28,26 +28,58 @@ VALID_EXT = (".png", ".jpg", ".jpeg")
 AUTOTUNE = tf.data.AUTOTUNE
 
 
+def read_image_folder(data_path, dtype):
+    """Decode every class-folder image into ONE preallocated (N, H, W, 1) array.
+
+    Same values and order as appending per-image arrays to a list and calling
+    np.asarray at the end, without holding both copies at once (that peak was
+    ~2x the final array and got long CPU runs killed on a 16 GB machine).
+    Returns (images, labels, n_errors).
+    """
+    files = []
+    for sub in sorted(os.listdir(data_path)):
+        spath = os.path.join(data_path, sub)
+        if os.path.isdir(spath):
+            files += [(sub, os.path.join(spath, fn)) for fn in sorted(os.listdir(spath))
+                      if fn.lower().endswith(VALID_EXT)]
+    print(f"Loading from {data_path} (resize {IMG_SIZE}x{IMG_SIZE})")
+    images = np.empty((len(files), IMG_SIZE, IMG_SIZE, 1), dtype=dtype)
+    labs, n = [], 0
+    for sub, path in tqdm(files, desc="Images"):
+        try:
+            raw = tf.io.read_file(path)
+            img = tf.image.decode_png(raw, channels=1)
+            img = tf.image.resize(img, [IMG_SIZE, IMG_SIZE])
+            images[n] = ((tf.cast(img, tf.float32) - 127.5) / 127.5).numpy()
+            labs.append(sub); n += 1
+        except Exception:
+            pass
+    return images[:n], labs, len(files) - n
+
+
+def permute_rows_inplace(arr, perm):
+    """arr[:] = arr[perm] without allocating a second full-size array (cycle walk)."""
+    seen = np.zeros(len(perm), dtype=bool)
+    for start in range(len(perm)):
+        if seen[start] or perm[start] == start:
+            seen[start] = True
+            continue
+        tmp = arr[start].copy()
+        j = start
+        while True:
+            seen[j] = True
+            k = perm[j]
+            if k == start:
+                arr[j] = tmp
+                break
+            arr[j] = arr[k]
+            j = k
+    return arr
+
+
 def load_images(data_path=DATA_PATH):
     """Load grayscale signs -> (images[-1,1], labels_int, encoder, prototypes, class_index)."""
-    imgs, labs, errs = [], [], 0
-    print(f"Loading from {data_path} (resize {IMG_SIZE}x{IMG_SIZE})")
-    for sub in tqdm(sorted(os.listdir(data_path)), desc="Classes"):
-        spath = os.path.join(data_path, sub)
-        if not os.path.isdir(spath):
-            continue
-        for fn in sorted(os.listdir(spath)):
-            if not fn.lower().endswith(VALID_EXT):
-                continue
-            try:
-                raw = tf.io.read_file(os.path.join(spath, fn))
-                img = tf.image.decode_png(raw, channels=1)
-                img = tf.image.resize(img, [IMG_SIZE, IMG_SIZE])
-                img = (tf.cast(img, tf.float32) - 127.5) / 127.5
-                imgs.append(img.numpy()); labs.append(sub)
-            except Exception:
-                errs += 1
-    images = np.asarray(imgs, dtype=np.float32)
+    images, labs, errs = read_image_folder(data_path, np.float32)
     # optional subsample for quick smoke tests (per-class cap, keeps all classes)
     _cap = int(os.environ.get("ARASL_MAX_PER_CLASS", 0))
     if _cap > 0:
@@ -68,7 +100,7 @@ def load_images(data_path=DATA_PATH):
     # shuffle once (deterministic)
     rng = np.random.default_rng(RANDOM_SEED)
     perm = rng.permutation(len(images))
-    images, labels_int = images[perm], labels_int[perm]
+    images, labels_int = permute_rows_inplace(images, perm), labels_int[perm]
 
     prototypes = np.zeros((num_classes, IMG_SIZE, IMG_SIZE, 1), dtype=np.float32)
     for c in range(num_classes):

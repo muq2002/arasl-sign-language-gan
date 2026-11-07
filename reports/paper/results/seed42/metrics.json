@@ -1,0 +1,42 @@
+{
+  "reference_classifier_on_real": 0.9754,
+  "eval_seed": 42,
+  "classifier_checkpoint": "reports/paper/results/seed42/reference_classifier_seed42.keras",
+  "classifier_mtime": "2026-11-07 18:06:09",
+  "num_classes": 32,
+  "img_size": 128,
+  "n_per_class_eval": 40,
+  "per_model": {
+    "A": {
+      "recognition": 0.6211,
+      "diversity": 0.1779,
+      "ssim": null
+    },
+    "B": {
+      "recognition": 0.6484,
+      "diversity": 0.1926,
+      "ssim": null
+    },
+    "C": {
+      "recognition": 0.7172,
+      "diversity": 0.4134,
+      "ssim": 0.7521,
+      "heldout_recognition": 0.6969,
+      "generalization_gap": 0.0203
+    },
+    "F": {
+      "recognition": 0.8609,
+      "diversity": 0.3722,
+      "ssim": 0.8249,
+      "heldout_recognition": 0.837,
+      "generalization_gap": 0.024
+    },
+    "G": {
+      "recognition": 0.9383,
+      "diversity": 0.401,
+      "ssim": 0.8251,
+      "heldout_recognition": 0.9062,
+      "generalization_gap": 0.0321
+    }
+  }
+}

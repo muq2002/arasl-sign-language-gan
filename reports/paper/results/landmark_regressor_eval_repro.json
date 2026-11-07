@@ -1,0 +1,30 @@
+{
+  "seed": 42,
+  "img_size": 128,
+  "reproduced": true,
+  "train_seconds": 560.9,
+  "devices": [
+    "CPU"
+  ],
+  "weights": "/home/mktad/arasl-work/repro_B/landmark_regressor_repro.weights.h5",
+  "weights_mtime": "2026-11-07 19:42:27",
+  "n_total": 54049,
+  "n_detected": 14834,
+  "detection_rate": 0.2745,
+  "n_train": 13350,
+  "n_val": 1484,
+  "regressor": {
+    "mse_norm": 0.002954073715955019,
+    "mae_norm": 0.031778495758771896,
+    "mse_px_xy": 72.55509185791016,
+    "mae_px_xy": 6.028776168823242,
+    "mean_euclid_px": 9.487181663513184
+  },
+  "constant_baseline": {
+    "mse_norm": 0.007670444902032614,
+    "mae_norm": 0.056106727570295334,
+    "mse_px_xy": 188.47340393066406,
+    "mae_px_xy": 10.740575790405273,
+    "mean_euclid_px": 16.865758895874023
+  }
+}
