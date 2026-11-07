@@ -29,6 +29,13 @@
          border:1px solid currentColor; margin-left:6px; vertical-align:middle; }
   .ok { color:var(--ok); } .part { color:var(--part); } .no { color:var(--no); }
   .note { background:var(--card); border-left:4px solid var(--part); padding:10px 14px; border-radius:4px; }
+  @media print {
+    body { max-width:none; padding:0; font-size:11pt; }
+    .tablewrap, pre { overflow:visible; }
+    pre { white-space:pre-wrap; word-break:break-all; }
+    tr, pre, .note { break-inside:avoid; }
+    h2, h3 { break-after:avoid; }
+  }
 </style>
 </head>
 <body>
