@@ -46,9 +46,9 @@
 <div class="note">
 <strong>Read this first.</strong> Items 7, 8, 9, 15 and 16 were answered on the evaluation laptop (RTX 5060).
 On 2026-11-08 <code>collect_training_machine_facts.sh</code> was run on the PC that holds the original
-training outputs (user <code>MustafaJK</code>, WSL2). That run closed items 1, 2, 3, 5, 10–12, 13 and 14 with the
-original files. Two items stay partly answered: 4 (batch size, code default only) and 6 (original regressor
-training time, bounded but not recorded). <strong>Correction:</strong> the training PC's GPU is an
+training outputs (user <code>MustafaJK</code>, WSL2). That run, plus the optimizer counters stored in the final
+checkpoints and the files' NTFS creation times, closed every remaining item (1–6, 10–14). All 16 items are now
+answered. <strong>Correction:</strong> the training PC's GPU is an
 <strong>NVIDIA GeForce RTX 4060 8 GB</strong>, not an RTX 3050 as assumed earlier.
 Raw files: <code>reports/paper/results/training_machine/</code>.
 </div>
@@ -60,9 +60,9 @@ Raw files: <code>reports/paper/results/training_machine/</code>.
 <tr><td>1</td><td>Per-epoch training history</td><td class="ok">Done — all five models, from the original <code>progress.json</code></td></tr>
 <tr><td>2</td><td>Model A epoch timing</td><td class="ok">Done — measured</td></tr>
 <tr><td>3</td><td>Model A generator-update count</td><td class="ok">Done — 2 per step (epochs 1–11), 3 (epochs 12–50)</td></tr>
-<tr><td>4</td><td>Batch size for F and G</td><td class="part">32 (code default, no override found); not recorded directly</td></tr>
+<tr><td>4</td><td>Batch size for F and G</td><td class="ok">Done — 32, confirmed by checkpoint update counts</td></tr>
 <tr><td>5</td><td>Landmark regressor validation error</td><td class="ok">Done — original weights</td></tr>
-<tr><td>6</td><td>Regressor training time</td><td class="part">Reproduction (CPU) plus bound and timestamp for the original</td></tr>
+<tr><td>6</td><td>Regressor training time</td><td class="ok">Done — at most 48 s originally; 42.9 s re-timed on the same GPU</td></tr>
 <tr><td>7</td><td>Native pixel size</td><td class="ok">Done</td></tr>
 <tr><td>8</td><td>Per-class image counts</td><td class="ok">Done</td></tr>
 <tr><td>9</td><td>Qualitative visual description</td><td class="ok">Done</td></tr>
@@ -112,13 +112,30 @@ uses 3 updates if that epoch's G/D ratio exceeded <code>G_D_RATIO_MAX = 2.0</cod
 <code>gd_ratio</code> values rise from 0.80 to 1.69 over epochs 1–10, reach 2.19 at epoch 11, and stay between 2.16 and
 2.20 until epoch 50, so 4 updates were never triggered. The measured epoch time confirms the switch: 401.5 s at
 epoch 11, then 548.9 s at epoch 12.</p>
+<p><strong>Direct count from the final checkpoint</strong> (<code>ckpt-50</code>): the generator optimizer applied
+<strong>234,676</strong> updates and the discriminator <strong>84,409</strong>, a ratio of 2.780, exactly the schedule's
+139/50 = 2.780. With 1,689 steps per epoch (54,049 images, batch 32) the schedule predicts 234,771 generator updates; the
+95 missing ones are steps skipped by mixed-precision loss scaling (inf/NaN gradients), which the optimizer does not count.
+File: <code>reports/paper/results/training_machine/optimizer_iterations.txt</code>.</p>
 
-<h3>4. Batch size for F and G <span class="tag part">32, code default</span></h3>
-<p>Not recorded directly: the original <code>progress.json</code> for F and G has no steps-per-epoch or batch-size field.
-The training PC adds two pieces of evidence for 32: its shell history contains no <code>ARASL_BATCH</code> override, and
+<h3>4. Batch size for F and G <span class="tag ok">done — 32</span></h3>
+<p><strong>Direct proof from the checkpoints.</strong> <code>progress.json</code> has no steps-per-epoch field, but each final
+checkpoint stores how many updates the optimizer applied. All datasets drop the last partial batch, so at batch 32 a model
+on 48,645 training images makes 1,520 steps per epoch, i.e. 76,000 discriminator updates in 50 epochs:</p>
+<div class="tablewrap">
+<table>
+<tr><th>Model</th><th>Training images</th><th>D updates in ckpt-50</th><th>Expected at batch 32</th><th>Skipped (loss scaling)</th></tr>
+<tr><td>C (reference, batch 32)</td><td class="n">48,645</td><td class="n">75,971</td><td class="n">76,000</td><td class="n">29</td></tr>
+<tr><td>F</td><td class="n">48,645</td><td class="n">75,969</td><td class="n">76,000</td><td class="n">31</td></tr>
+<tr><td>G</td><td class="n">48,645</td><td class="n">75,970</td><td class="n">76,000</td><td class="n">30</td></tr>
+</table>
+</div>
+<p>Batch 16 would give about 152,000 updates and batch 64 about 38,000, so <strong>F and G used batch 32
+(1,520 steps per epoch)</strong>. The 29–31 missing updates are steps skipped by mixed-precision loss scaling.</p>
+<p>Supporting evidence: the training PC's shell history contains no <code>ARASL_BATCH</code> override, and
 <code>src/config.py</code> sets <code>BATCH_SIZE = int(os.environ.get("ARASL_BATCH", 32))</code>
 (<code>train_model_g.py</code> notes "Batch stays 32"). Together with F's epoch time being within 5% of C's on the same
-network (236 s against 226 s), this points to 32, i.e. 1,520 steps per epoch on 48,645 training images.
+network (236 s against 226 s), everything agrees.
 The <code>761/761</code> steps in <code>train_G.log</code> belong to G's auxiliary classifier (batch 64), not the GAN.</p>
 
 <h3>5. Landmark regressor validation error <span class="tag ok">done — original weights</span></h3>
@@ -170,7 +187,19 @@ images, the same scale as this validation MSE.</li>
 <p class="muted">File: <code>reports/paper/results/landmark_regressor_eval_repro.json</code>; log:
 <code>reports/paper/logs/repro_landmark_regressor.log</code>.</p>
 
-<h3>6. Regressor training time <span class="tag part">reproduction plus bound</span></h3>
+<h3>6. Regressor training time <span class="tag ok">done</span></h3>
+<p><strong>Original run: at most 48 s on the RTX 4060.</strong> Windows keeps a creation time for each file. In Model B's
+first launch (<code>driver.log</code>: START B 19:46:59 on 2026-07-06), <code>checkpoints/classes.npy</code> was created at
+<strong>19:49:49</strong>, right after image loading, and <code>landmark_regressor.weights.h5</code> at
+<strong>19:50:37</strong>, written once after training. Everything in between (loading the cached landmarks, building the
+models and the 20 regressor epochs) took 48 s.</p>
+<p><strong>Re-timed on the same GPU: 42.9 s.</strong> The same <code>train_regressor()</code> was run again on the training PC
+on 2026-11-08 (new weights path, originals untouched): 20 epochs in 42.9 s, which fits inside the 48 s window. Suggested
+wording: "the regressor trains in under a minute (about 43 s) on the RTX 4060".</p>
+<p class="muted">Files: <code>training_machine/extra.txt</code>, <code>training_machine/regressor_gpu_retime.log</code>,
+<code>landmark_regressor_eval_gpu_retime.json</code>. The re-trained copy's error (10.9 px) differs from the original's (9.18 px)
+because GPU training is not bit-deterministic; the manuscript should use the original weights' numbers from item 5.</p>
+<p>Earlier evidence, kept for reference:</p>
 <ul>
 <li><strong>Reproduction on the laptop (CPU):</strong> 560.9 s (9.3 min) for 20 epochs. The learning rate was halved
 at epochs 9 and 18, and the best epoch was 19.</li>
@@ -178,7 +207,7 @@ at epochs 9 and 18, and the best epoch was 19.</li>
 trained, so it was trained in one of two earlier short launches (319 s and 526 s, each including about 3 minutes of
 data loading). That puts it <strong>under roughly 6 minutes</strong>. The training PC confirms the timing:
 the original weights file was written at <strong>2026-07-06 19:50:37</strong>, 3.6 minutes after Model A finished on the same
-GPU (19:46:59), and Model B's real run started about 20:10. No log line records the exact wall-clock.</li>
+GPU (19:46:59), and Model B's real run started about 20:10.</li>
 <li><strong>Landmark extraction:</strong> 3,000.6 s on the training PC; on the laptop the run was interrupted once; the resumed
 part took 2,442 s for the last 39,049 images, which scales to about 3,400 s for all 54,049.</li>
 </ul>
@@ -364,7 +393,8 @@ generators behave identically on the laptop.</li>
 histories, summarised every model's timing (<code>progress_summary.txt</code>), evaluated the original regressor, recorded
 the environment and wrote both <code>pip freeze</code> files. The only missing inputs were F's and G's
 <code>loss_history.csv</code>, which were never written there. Extra evidence for items 4, 6 and 14 is in
-<code>training_machine/extra.txt</code>.</p>
+<code>training_machine/extra.txt</code>; optimizer update counts for items 3 and 4 are in
+<code>training_machine/optimizer_iterations.txt</code>.</p>
 
 <h2>Files added or changed</h2>
 <ul>

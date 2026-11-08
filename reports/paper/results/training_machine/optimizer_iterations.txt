@@ -1,0 +1,13 @@
+# Applied optimizer updates in the final checkpoint (outputs/<model>/checkpoints/ckpt-50),
+# read with tf.train.load_checkpoint on the training PC, 2026-11-08.
+# Key: {d_opt,g_opt}/inner_optimizer/_iterations (LossScaleOptimizer inner Adam; it does NOT count
+# steps skipped by dynamic loss scaling because of inf/NaN gradients). All datasets use drop_remainder=True.
+model  train_imgs  d_updates  g_updates  expected_d @ batch 32           skipped_d
+A      54049       84409      234676     50 x (54049//32=1689) = 84450   41
+B      54049       84410      234680     50 x 1689 = 84450               40
+C      48645       75971      75967      50 x (48645//32=1520) = 76000   29
+F      48645       75969      75969      50 x 1520 = 76000               31
+G      48645       75970      75968      50 x 1520 = 76000               30
+# Batch 16 would give ~152,000 and batch 64 ~38,000 D updates; only batch 32 fits.
+# Model A G/D update ratio: 234676 / 84409 = 2.780; schedule 2 updates (ep 1-11) + 3 (ep 12-50)
+#   predicts (11*2 + 39*3)/50 = 139/50 = 2.780; expected G updates 139 x 1689 = 234,771 (95 skipped).

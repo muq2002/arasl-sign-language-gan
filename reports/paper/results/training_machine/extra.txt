@@ -21,3 +21,12 @@ drwxr-xr-x 5 root root 4096 2026-06-10 08:44:00.456321727 +0300 models--nvidia--
   (Model A trained on the same GPU in that window; Model B started ~20:10). The 560.9 s figure is from the laptop repro, not the original.
 - Item 14: data/arasl.parquet 2026-07-06 09:34:58 +0300; data/ArASL_dataset/_counts.json 2026-07-06 10:00:16. No HF hub cache entry for the dataset.
 - F and G have no outputs/*/history/loss_history.csv (history/ folder absent); per-epoch losses are in their progress.json.
+
+## Regressor training time, direct evidence (item 6), added 2026-11-08
+- NTFS creation times (Windows): outputs/cgan_B_128mp/checkpoints/classes.npy created 2026-07-06 19:49:49
+  (np.save right after load_images in the first B launch, driver.log START B 19:46:59);
+  landmark_regressor.weights.h5 created 2026-07-06 19:50:37 (saved once, after training).
+  => original regressor training (plus cached-landmark load and model build) took at most 48 s.
+- Re-timed on the same RTX 4060 with the same train_regressor() (ARASL_REG_RETRAIN=1, new weights path):
+  42.9 s for 20 epochs (best epoch 18). Log: regressor_gpu_retime.log;
+  result: reports/paper/results/landmark_regressor_eval_gpu_retime.json.
