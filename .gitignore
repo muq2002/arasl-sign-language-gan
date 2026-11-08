@@ -38,3 +38,6 @@ data/*.parquet
 *.out
 *.npy.progress
 reports/paper/logs/watch_*.sh
+
+# dataset archive (143MB, exceeds GitHub file limit)
+data/*.zip
