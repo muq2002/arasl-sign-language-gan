@@ -41,54 +41,61 @@
 <body>
 
 <h1>Missing values and results — answers</h1>
-<p class="lead">Answers to the 16 items in <code>missing value and result.pdf</code>, prepared 2026-10-05, updated 2026-11-07.</p>
+<p class="lead">Answers to the 16 items in <code>missing value and result.pdf</code>, prepared 2026-10-05, updated 2026-11-08 with values from the training PC.</p>
 
 <div class="note">
-<strong>Read this first.</strong> This laptop is not the machine that trained the models. The committed logs
-show training ran on another PC (user <code>MustafaJK</code>, RTX 3050). This laptop (RTX 5060) has no
-<code>progress.json</code>, no checkpoints and no regressor weights. 5 items are fully answered here
-(7, 8, 9, 15, 16), 2 are answered by a faithful reproduction on this laptop (5, 6), 5 are partly answered,
-and the rest need one script run on the training PC.
+<strong>Read this first.</strong> Items 7, 8, 9, 15 and 16 were answered on the evaluation laptop (RTX 5060).
+On 2026-11-08 <code>collect_training_machine_facts.sh</code> was run on the PC that holds the original
+training outputs (user <code>MustafaJK</code>, WSL2). That run closed items 1, 2, 3, 5, 10–12, 13 and 14 with the
+original files. Two items stay partly answered: 4 (batch size, code default only) and 6 (original regressor
+training time, bounded but not recorded). <strong>Correction:</strong> the training PC's GPU is an
+<strong>NVIDIA GeForce RTX 4060 8 GB</strong>, not an RTX 3050 as assumed earlier.
+Raw files: <code>reports/paper/results/training_machine/</code>.
 </div>
 
 <h2>Status at a glance</h2>
 <div class="tablewrap">
 <table>
 <tr><th>#</th><th>Item</th><th>Status</th></tr>
-<tr><td>1</td><td>Per-epoch training history</td><td class="part">Partly — B, C, F, G rebuilt from logs; A missing</td></tr>
-<tr><td>2</td><td>Model A epoch timing</td><td class="part">Estimate only</td></tr>
-<tr><td>3</td><td>Model A generator-update count</td><td class="no">Needs training PC</td></tr>
-<tr><td>4</td><td>Batch size for F and G</td><td class="part">Very likely 32, not confirmed</td></tr>
-<tr><td>5</td><td>Landmark regressor validation error</td><td class="ok">Done by reproduction on this laptop</td></tr>
-<tr><td>6</td><td>Regressor training time</td><td class="part">Reproduction (CPU) plus bound for the original</td></tr>
+<tr><td>1</td><td>Per-epoch training history</td><td class="ok">Done — all five models, from the original <code>progress.json</code></td></tr>
+<tr><td>2</td><td>Model A epoch timing</td><td class="ok">Done — measured</td></tr>
+<tr><td>3</td><td>Model A generator-update count</td><td class="ok">Done — 2 per step (epochs 1–11), 3 (epochs 12–50)</td></tr>
+<tr><td>4</td><td>Batch size for F and G</td><td class="part">32 (code default, no override found); not recorded directly</td></tr>
+<tr><td>5</td><td>Landmark regressor validation error</td><td class="ok">Done — original weights</td></tr>
+<tr><td>6</td><td>Regressor training time</td><td class="part">Reproduction (CPU) plus bound and timestamp for the original</td></tr>
 <tr><td>7</td><td>Native pixel size</td><td class="ok">Done</td></tr>
 <tr><td>8</td><td>Per-class image counts</td><td class="ok">Done</td></tr>
 <tr><td>9</td><td>Qualitative visual description</td><td class="ok">Done</td></tr>
-<tr><td>10–12</td><td>CPU, RAM, CUDA, cuDNN, driver, WSL, Windows</td><td class="no">This laptop only; training PC unverified</td></tr>
-<tr><td>13</td><td>Frozen dependency lists</td><td class="part">This laptop only</td></tr>
-<tr><td>14</td><td>MediaPipe version, dataset source and date</td><td class="part">Source known; version and date unconfirmed for training PC</td></tr>
-<tr><td>15</td><td>Fixed-seed evaluation pass</td><td class="ok">Done (this laptop, seed 42)</td></tr>
+<tr><td>10–12</td><td>CPU, RAM, CUDA, cuDNN, driver, WSL, Windows</td><td class="ok">Done — training PC</td></tr>
+<tr><td>13</td><td>Frozen dependency lists</td><td class="ok">Done — training PC</td></tr>
+<tr><td>14</td><td>MediaPipe version, dataset source and date</td><td class="ok">Done — MediaPipe 0.10.14, parquet dated 2026-07-06</td></tr>
+<tr><td>15</td><td>Fixed-seed evaluation pass</td><td class="ok">Done (the laptop, seed 42)</td></tr>
 <tr><td>16</td><td>Full per-class accuracy, all five models</td><td class="ok">Done</td></tr>
 </table>
 </div>
 
 <h2>Files and numbers from the run</h2>
 
-<h3>1. Per-epoch training history <span class="tag part">partly done</span></h3>
-<p>All 50 epochs for B, C, F and G were rebuilt from the committed training logs into
-<code>reports/paper/results/history_from_logs/loss_history_{B,C,F,G}.csv</code>. New charts
-<code>reports/paper/charts/loss_model_F.png</code> and <code>loss_model_G.png</code> show the adversarial and
-landmark terms on separate panels. Model A's history is not recoverable here: its log was already
-overwritten in every commit.</p>
+<h3>1. Per-epoch training history <span class="tag ok">done</span></h3>
+<p>The original <code>progress.json</code> of all five models (50 epochs each, with per-epoch losses and
+<code>epoch_seconds</code>) is now committed under
+<code>reports/paper/results/training_machine/cgan_{A_128,B_128mp,C_128struct,F_128fusion,G_128plus}/</code>,
+together with the original <code>loss_history.csv</code> for A, B and C. F and G never wrote a
+<code>loss_history.csv</code> on the training PC; their per-epoch losses are in <code>progress.json</code>
+and in the log rebuilds <code>reports/paper/results/history_from_logs/loss_history_{F,G}.csv</code>.
+Model A's history, previously missing, is now available:
+<code>training_machine/cgan_A_128/loss_history.csv</code> (columns d, g_adv, g_pixel, g_total, gd_ratio, lam, epoch_seconds).</p>
 
-<h3>2. Model A epoch timing <span class="tag part">estimate</span></h3>
-<p><code>driver.log</code> shows the last real A run from 12:30:13 to 19:46:59 on 2026-07-06, which is 26,206 s.
-Subtracting about 200 s of data loading gives roughly <strong>26,000 s, about 7.2 h, about 520 s per epoch</strong>.
-This assumes that launch ran all 50 epochs from scratch. The minimum–maximum range is not recoverable.</p>
-<p>Measured totals for the other four models, from their logs:</p>
+<h3>2. Model A epoch timing <span class="tag ok">done</span></h3>
+<p>Measured from <code>epoch_seconds</code> in the original <code>progress.json</code>:
+<strong>mean 517.5 s per epoch, range 399.3–567.5 s, total 25,873.2 s (7.19 h)</strong> over 50 epochs.
+This agrees with the earlier estimate from <code>driver.log</code> (about 26,000 s). Epochs 1–11 take about 400 s
+and epochs 12–50 about 550 s, because the generator gets a third update per step from epoch 12 (item 3).</p>
+<p>All five models, from their original <code>progress.json</code>:</p>
 <div class="tablewrap">
 <table>
 <tr><th>Model</th><th>Mean s/epoch</th><th>Range (s)</th><th>Total s</th><th>Total h</th></tr>
+<tr><td>A</td><td class="n">517.5</td><td class="n">399.3–567.5</td><td class="n">25,873.2</td><td class="n">7.19</td></tr>
 <tr><td>B</td><td class="n">538.8</td><td class="n">417.4–574.4</td><td class="n">26,941.4</td><td class="n">7.48</td></tr>
 <tr><td>C</td><td class="n">232.4</td><td class="n">224.5–261.9</td><td class="n">11,618.5</td><td class="n">3.23</td></tr>
 <tr><td>F</td><td class="n">239.2</td><td class="n">235.7–261.9</td><td class="n">11,962.5</td><td class="n">3.32</td></tr>
@@ -97,18 +104,44 @@ This assumes that launch ran all 50 epochs from scratch. The minimum–maximum r
 </div>
 <p class="muted">G also spent 818 s training its auxiliary classifier before the GAN epochs.</p>
 
-<h3>3. Model A generator-update count <span class="tag no">needs training PC</span></h3>
-<p>Not recoverable here. For reference, Model B's log shows 2 generator updates per step in epochs 1–11
-and 3 in epochs 12–50. A may differ.</p>
+<h3>3. Model A generator-update count <span class="tag ok">done</span></h3>
+<p><strong>2 generator updates per discriminator step in epochs 1–11, and 3 in epochs 12–50</strong>
+(139 update-epochs in total, i.e. 22 + 117), the same schedule as Model B.</p>
+<p>How it was derived: <code>src/train_model_a.py</code> starts at <code>G_UPDATES_BASE = 2</code> and, after each epoch,
+uses 3 updates if that epoch's G/D ratio exceeded <code>G_D_RATIO_MAX = 2.0</code> (4 if it exceeded 3.0). The original
+<code>gd_ratio</code> values rise from 0.80 to 1.69 over epochs 1–10, reach 2.19 at epoch 11, and stay between 2.16 and
+2.20 until epoch 50, so 4 updates were never triggered. The measured epoch time confirms the switch: 401.5 s at
+epoch 11, then 548.9 s at epoch 12.</p>
 
-<h3>4. Batch size for F and G <span class="tag part">likely 32</span></h3>
-<p>The method suggested in the PDF will not work: <code>progress.json</code> for F and G does not record steps per epoch.
-Indirect evidence points to 32: Model C was launched by a committed script with no override (so 32), and F's
-epoch time is within 5% of C's on the same network (236 s against 226 s). At 32 that is 1,520 steps per epoch
-on 48,645 training images. Shell history on the training PC is the only direct proof.</p>
+<h3>4. Batch size for F and G <span class="tag part">32, code default</span></h3>
+<p>Not recorded directly: the original <code>progress.json</code> for F and G has no steps-per-epoch or batch-size field.
+The training PC adds two pieces of evidence for 32: its shell history contains no <code>ARASL_BATCH</code> override, and
+<code>src/config.py</code> sets <code>BATCH_SIZE = int(os.environ.get("ARASL_BATCH", 32))</code>
+(<code>train_model_g.py</code> notes "Batch stays 32"). Together with F's epoch time being within 5% of C's on the same
+network (236 s against 226 s), this points to 32, i.e. 1,520 steps per epoch on 48,645 training images.
+The <code>761/761</code> steps in <code>train_G.log</code> belong to G's auxiliary classifier (batch 64), not the GAN.</p>
 
-<h3>5. Landmark regressor validation error <span class="tag ok">done by reproduction</span></h3>
-<p>The original weights are not on this laptop, so the regressor was <strong>reproduced</strong> here on 2026-11-07
+<h3>5. Landmark regressor validation error <span class="tag ok">done — original weights</span></h3>
+<p>On 2026-11-08 the <strong>original</strong> weights
+(<code>outputs/cgan_B_128mp/checkpoints/landmark_regressor.weights.h5</code>, written 2026-07-06 19:50:37, the
+weights Models B, F and G used) were evaluated on the training PC with <code>src/eval_landmark_regressor.py</code>, on the
+same split: 14,834 detected images (27.45%), 13,350 train, 1,484 validation.</p>
+<div class="tablewrap">
+<table>
+<tr><th>Validation error</th><th>Original regressor</th><th>Constant baseline (training mean)</th><th>Reduction</th></tr>
+<tr><td>MSE, normalised (all 63 values)</td><td class="n">0.00283</td><td class="n">0.00767</td><td class="n">63%</td></tr>
+<tr><td>MAE, normalised (all 63 values)</td><td class="n">0.0305</td><td class="n">0.0561</td><td class="n">46%</td></tr>
+<tr><td>MSE, pixels² (x, y only)</td><td class="n">69.6</td><td class="n">188.5</td><td class="n">63%</td></tr>
+<tr><td>MAE, pixels (x, y only)</td><td class="n">5.82</td><td class="n">10.74</td><td class="n">46%</td></tr>
+<tr><td>Mean keypoint distance, pixels</td><td class="n">9.18</td><td class="n">16.87</td><td class="n">46%</td></tr>
+</table>
+</div>
+<p><strong>These are the numbers to report in the manuscript.</strong> The reproduction below, made earlier on the laptop,
+is within 5% of them (mean distance 9.49 px against 9.18 px), which shows the training procedure is reproducible.
+File: <code>reports/paper/results/landmark_regressor_eval.json</code>; log:
+<code>reports/paper/results/training_machine/landmark_regressor_eval.log</code>.</p>
+<p class="muted">Earlier reproduction (kept for reference):</p>
+<p>Before the original weights were available, the regressor was <strong>reproduced</strong> on the laptop on 2026-11-07
 with the repository's own code: landmarks re-extracted with MediaPipe 0.10.14, then the regressor trained with
 <code>train_regressor()</code> from <code>src/train_model_b.py</code> (seed 42, same 20-epoch schedule and callbacks).</p>
 <p>The reproduction matches the original pipeline closely: hand detection is <strong>27.45%</strong> (14,834 of
@@ -116,7 +149,7 @@ with the repository's own code: landmarks re-extracted with MediaPipe 0.10.14, t
 (1,484 images; 13,350 for training), as Keras <code>validation_split</code> does in the original.</p>
 <div class="tablewrap">
 <table>
-<tr><th>Validation error</th><th>Regressor</th><th>Constant baseline (training mean)</th><th>Reduction</th></tr>
+<tr><th>Validation error</th><th>Reproduced regressor</th><th>Constant baseline (training mean)</th><th>Reduction</th></tr>
 <tr><td>MSE, normalised (all 63 values)</td><td class="n">0.00295</td><td class="n">0.00767</td><td class="n">61%</td></tr>
 <tr><td>MAE, normalised (all 63 values)</td><td class="n">0.0318</td><td class="n">0.0561</td><td class="n">43%</td></tr>
 <tr><td>MSE, pixels² (x, y only)</td><td class="n">72.6</td><td class="n">188.5</td><td class="n">61%</td></tr>
@@ -132,20 +165,21 @@ and G can be.</li>
 <li><strong>Pixel units:</strong> pixel errors use only x and y (scaled by 128); MediaPipe's z has no pixel meaning.</li>
 <li><strong>Consistency check:</strong> the original B training log shows a landmark loss of about 0.003 on generated
 images, the same scale as this validation MSE.</li>
-<li><strong>Caveat for the manuscript:</strong> these numbers come from a retrained regressor, not the exact weights used
-for F and G. Running <code>collect_training_machine_facts.sh</code> on the training PC gives the original weights' numbers.</li>
+<li><strong>Superseded:</strong> these numbers come from a retrained regressor. Use the original-weights table above.</li>
 </ul>
 <p class="muted">File: <code>reports/paper/results/landmark_regressor_eval_repro.json</code>; log:
 <code>reports/paper/logs/repro_landmark_regressor.log</code>.</p>
 
 <h3>6. Regressor training time <span class="tag part">reproduction plus bound</span></h3>
 <ul>
-<li><strong>Reproduction on this laptop (CPU):</strong> 560.9 s (9.3 min) for 20 epochs. The learning rate was halved
+<li><strong>Reproduction on the laptop (CPU):</strong> 560.9 s (9.3 min) for 20 epochs. The learning rate was halved
 at epochs 9 and 18, and the best epoch was 19.</li>
 <li><strong>Original on the training PC (GPU):</strong> not recorded. Model B's final launch loaded the regressor already
 trained, so it was trained in one of two earlier short launches (319 s and 526 s, each including about 3 minutes of
-data loading). That puts it <strong>under roughly 6 minutes</strong>.</li>
-<li><strong>Landmark extraction:</strong> 3,000.6 s on the training PC; on this laptop the run was interrupted once; the resumed
+data loading). That puts it <strong>under roughly 6 minutes</strong>. The training PC confirms the timing:
+the original weights file was written at <strong>2026-07-06 19:50:37</strong>, 3.6 minutes after Model A finished on the same
+GPU (19:46:59), and Model B's real run started about 20:10. No log line records the exact wall-clock.</li>
+<li><strong>Landmark extraction:</strong> 3,000.6 s on the training PC; on the laptop the run was interrupted once; the resumed
 part took 2,442 s for the last 39,049 images, which scales to about 3,400 s for all 54,049.</li>
 </ul>
 
@@ -198,40 +232,51 @@ vector has little visible effect, so variety comes from the structure map, not f
 
 <h2>Environment and software</h2>
 
-<h3>10–12. Hardware and versions <span class="tag no">this laptop only</span></h3>
-<p>These values describe this laptop, not the PC that trained the models.</p>
+<h3>10–12. Hardware and versions <span class="tag ok">done</span></h3>
+<p>Recorded on the training PC on 2026-11-08 (<code>reports/paper/results/training_machine/environment.txt</code>).
+The laptop used for items 15–16 is shown for comparison.</p>
 <div class="tablewrap">
 <table>
-<tr><th></th><th>This laptop</th></tr>
-<tr><td>CPU / RAM</td><td>Intel Core i7-14650HX, 15.7 GB</td></tr>
-<tr><td>GPU / driver</td><td>RTX 5060 Laptop 8 GB, driver 610.62</td></tr>
-<tr><td>Windows</td><td>11 Pro, build 26200</td></tr>
-<tr><td>WSL</td><td>2.7.10.0, Ubuntu 26.04 LTS, kernel 6.18.33.2</td></tr>
-<tr><td>Python / TensorFlow / Keras</td><td>3.11.15 / 2.21.0 / 3.15.0</td></tr>
-<tr><td>CUDA / cuDNN wheels loaded</td><td>CUDA 12.9.x, cuDNN 9.24.0.43</td></tr>
+<tr><th></th><th>Training PC (models A–G)</th><th>Evaluation laptop</th></tr>
+<tr><td>CPU</td><td>Intel Core i7-12700K</td><td>Intel Core i7-14650HX</td></tr>
+<tr><td>RAM</td><td>32 GB physical; 17 GB available to WSL2</td><td>15.7 GB</td></tr>
+<tr><td>GPU / driver</td><td><strong>NVIDIA GeForce RTX 4060, 8 GB</strong>, driver 616.92</td><td>RTX 5060 Laptop 8 GB, driver 610.62</td></tr>
+<tr><td>Windows</td><td>build 10.0.26200.9711</td><td>11 Pro, build 26200</td></tr>
+<tr><td>WSL</td><td>3.0.3.0, Ubuntu 26.04 LTS, kernel 6.18.54.1</td><td>2.7.10.0, Ubuntu 26.04 LTS, kernel 6.18.33.2</td></tr>
+<tr><td>Python / TensorFlow / Keras</td><td>3.11.15 / 2.21.0 / 3.15.0</td><td>3.11.15 / 2.21.0 / 3.15.0</td></tr>
+<tr><td>TensorFlow build versions</td><td>CUDA 12.5.1, cuDNN 9</td><td>CUDA 12.5.1, cuDNN 9</td></tr>
+<tr><td>CUDA / cuDNN wheels loaded</td><td>CUDA runtime 12.9.79, cuBLAS 12.9.2.10, cuDNN 9.24.0.43</td><td>CUDA 12.9.x, cuDNN 9.24.0.43</td></tr>
 </table>
 </div>
-<p>Two clues about the provisional line in the manuscript:</p>
 <ul>
-<li>"CUDA 12.5.1, cuDNN 9" is exactly what TensorFlow 2.21 reports as its build-time versions. That line may be
-the build string, not the libraries actually loaded.</li>
-<li>A comment in <code>src/train_model_b.py</code> says "avoids OOM at 16 GB", which conflicts with "32 GB RAM".</li>
+<li><strong>GPU correction:</strong> the manuscript (and earlier versions of this page) should say RTX 4060 8 GB, not RTX 3050.</li>
+<li><strong>CUDA line:</strong> "CUDA 12.5.1, cuDNN 9" is TensorFlow's build-time string. The libraries actually loaded are
+CUDA 12.9 and cuDNN 9.24. Suggested wording: "TensorFlow 2.21 (built against CUDA 12.5 / cuDNN 9) with CUDA 12.9 and
+cuDNN 9.24 runtime libraries".</li>
+<li><strong>RAM:</strong> the PC has 32 GB, but WSL2 only gets about 17 GB by default. That explains the "avoids OOM at 16 GB"
+comment in <code>src/train_model_b.py</code>; both statements are true.</li>
+<li><code>nvcc</code> is not installed on the training PC; CUDA comes only from the pip <code>nvidia-*</code> wheels.</li>
 </ul>
 
-<h3>13. Frozen dependency lists <span class="tag part">this laptop only</span></h3>
-<p>Saved as <code>reports/paper/results/seed42/requirements_tf_eval_machine.txt</code> and
-<code>requirements_mp_eval_machine.txt</code>. Protobuf is 7.35.1 in the TensorFlow environment and 4.25.9 in the
-MediaPipe one, matching the "4.x vs 7.x" note in the code. The training PC's lists still need to be captured.</p>
+<h3>13. Frozen dependency lists <span class="tag ok">done</span></h3>
+<p>The training PC's lists are committed as <code>requirements_tf.txt</code> (TensorFlow env <code>arasl</code>, protobuf
+7.35.1) and <code>requirements_mp.txt</code> (MediaPipe env <code>mp</code>, protobuf 4.25.9) at the repository root.
+They match the laptop's lists in <code>reports/paper/results/seed42/</code> on the key packages, and the protobuf split
+matches the "4.x vs 7.x" note in the code.</p>
 
-<h3>14. MediaPipe version and dataset source <span class="tag part">partly done</span></h3>
-<p>MediaPipe is 0.10.14 on this laptop; the training PC's version is unconfirmed. The dataset is
-<code>pain/ArASL_Database_Grayscale</code> on Hugging Face. The local parquet file is dated 2026-06-29;
-the download date on the training PC is unknown.</p>
+<h3>14. MediaPipe version and dataset source <span class="tag ok">done</span></h3>
+<ul>
+<li><strong>MediaPipe:</strong> 0.10.14 on the training PC (protobuf 4.25.9), the same as on the laptop.</li>
+<li><strong>Dataset:</strong> <code>pain/ArASL_Database_Grayscale</code> on Hugging Face. On the training PC
+<code>data/arasl.parquet</code> is dated <strong>2026-07-06 09:34:58 (+03:00)</strong>, and the extracted image folder's
+<code>_counts.json</code> 10:00:16 the same morning, three hours before Model A started (12:30). The Hugging Face cache holds
+no copy of the dataset, so the file timestamp is the best record of the download date.</li>
+</ul>
 
 <h2>Additional runs</h2>
 
 <h3>15. Fixed-seed evaluation pass <span class="tag ok">done</span></h3>
-<p>Run on this laptop (CPU) on 2026-11-07 with seed 42. One reference classifier was trained, saved and used by
+<p>Run on the laptop (CPU) on 2026-11-07 with seed 42. One reference classifier was trained, saved and used by
 <em>both</em> <code>paper_eval.py</code> and <code>confusion_matrix.py</code>. Both logs print the same provenance line:</p>
 <pre><code>path=reports/paper/results/seed42/reference_classifier_seed42.keras
 mtime=2026-11-07 18:06:09   seed=42   samples_per_class=40 (paper_eval) / 60 (confusion_matrix)
@@ -253,7 +298,7 @@ reference classifier on real held-out = 0.9754</code></pre>
 0.9383 against 0.9461), because the classifier is a different instance. The ranking A &lt; B &lt; C &lt; F &lt; G is unchanged.
 The manuscript's headline table and Table 17 should both take their values from this run.</li>
 <li><strong>Consistency check:</strong> diversity for A, B, F and G matches the original run to four decimals, so the
-generators behave identically on this laptop.</li>
+generators behave identically on the laptop.</li>
 <li><strong>Reproducibility note:</strong> training was interrupted by low memory and resumed from saved epoch 11
 (re-seeded with 42 + 11). Re-running gives the same result, but it is not bit-identical to an uninterrupted run.</li>
 </ul>
@@ -313,11 +358,13 @@ generators behave identically on this laptop.</li>
 </table>
 </div>
 
-<h2>What to run on the training PC</h2>
+<h2>Training PC run (2026-11-08)</h2>
 <pre><code>bash collect_training_machine_facts.sh</code></pre>
-<p>This copies the five histories, summarises Model A's timing and update counts, evaluates the original
-regressor against a constant baseline, records the environment and writes both <code>pip freeze</code> files.
-It has not been run, because the files it reads are not on this laptop.</p>
+<p>Run on the training PC; results committed in <code>c402427</code> on <code>reviewer-missing-values</code>. It copied the five
+histories, summarised every model's timing (<code>progress_summary.txt</code>), evaluated the original regressor, recorded
+the environment and wrote both <code>pip freeze</code> files. The only missing inputs were F's and G's
+<code>loss_history.csv</code>, which were never written there. Extra evidence for items 4, 6 and 14 is in
+<code>training_machine/extra.txt</code>.</p>
 
 <h2>Files added or changed</h2>
 <ul>
@@ -327,11 +374,14 @@ It has not been run, because the files it reads are not on this laptop.</p>
 <li><code>collect_training_machine_facts.sh</code> — one-shot collector for the training PC</li>
 <li><code>reports/paper/results/history_from_logs/</code> — four loss histories and <code>timing_summary.json</code></li>
 <li><code>reports/paper/charts/loss_model_F.png</code>, <code>loss_model_G.png</code></li>
-<li><code>reports/paper/results/seed42/</code> — seeded evaluation results, per-class accuracy, confusion matrices, saved classifier, this laptop's dependency lists</li>
+<li><code>reports/paper/results/seed42/</code> — seeded evaluation results, per-class accuracy, confusion matrices, saved classifier, the laptop's dependency lists</li>
 <li><code>src/data.py</code>, <code>src/train_model_c.py</code> — image loader writes into one preallocated array (same values, about half the peak memory)</li>
 <li><code>run_missing_values.sh</code> — resumable run for items 5, 6, 15 and 16</li>
 <li><code>experiments/scripts/extract_lm_full.py</code> — reads images memory-mapped (same values, far less memory)</li>
 <li><code>reports/paper/results/landmark_regressor_eval_repro.json</code> — reproduced regressor error and baseline</li>
+<li><code>reports/paper/results/training_machine/</code> — original histories, timing summary, environment, file times, extra evidence (training PC)</li>
+<li><code>reports/paper/results/landmark_regressor_eval.json</code> — original regressor error and baseline (training PC)</li>
+<li><code>requirements_tf.txt</code>, <code>requirements_mp.txt</code> — training PC dependency lists</li>
 </ul>
 
 
