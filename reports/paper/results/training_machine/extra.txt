@@ -1,0 +1,23 @@
+## Batch size evidence for F and G (item 4)
+## Regressor training time (item 6)
+reports/paper/logs/train_B.log:17:Regressor loaded (frozen): /mnt/c/Users/MustafaJK/arasl-sign-language-gan/outputs/cgan_B_128mp/checkpoints/landmark_regressor.weights.h5
+## Dataset download date (item 14)
+-rwxrwxrwx 1 root root 30479019 2026-07-06 09:34:58.392644100 +0300 data/arasl.parquet
+
+/root/.cache/huggingface/hub:
+total 12
+drwxr-xr-x 5 root root 4096 2026-06-10 09:16:53.779897528 +0300 models--Systran--faster-whisper-large-v3
+drwxr-xr-x 5 root root 4096 2026-06-10 09:10:59.931956221 +0300 models--Systran--faster-whisper-tiny
+drwxr-xr-x 5 root root 4096 2026-06-10 08:44:00.456321727 +0300 models--nvidia--stt_ar_fastconformer_hybrid_large_pc_v1.0
+
+## Notes added on the training PC (2026-11-08)
+- GPU on this PC is an NVIDIA GeForce RTX 4060 8 GB (driver 616.92), not an RTX 3050 as the task sheet assumed.
+  The outputs/ originals (progress.json, regressor weights) are on this machine.
+- Item 4 (F/G batch size): no ARASL_BATCH in ~/.bash_history; progress.json for F/G has no steps_per_epoch/batch_size key.
+  src/config.py: BATCH_SIZE = int(os.environ.get("ARASL_BATCH", 32)); train_model_g.py docstring: "Batch stays 32".
+  => batch 32 (code default, no override found). The 761/761 steps in train_G.log are the aux classifier (REG/aux batch 64 on 48645 imgs), not the GAN.
+- Item 6 (regressor training time): no log line with the original training wall-clock. Bounded by file times only:
+  landmarks_128px.npy written 2026-07-06 12:29:27, landmark_regressor.weights.h5 written 2026-07-06 19:50:37
+  (Model A trained on the same GPU in that window; Model B started ~20:10). The 560.9 s figure is from the laptop repro, not the original.
+- Item 14: data/arasl.parquet 2026-07-06 09:34:58 +0300; data/ArASL_dataset/_counts.json 2026-07-06 10:00:16. No HF hub cache entry for the dataset.
+- F and G have no outputs/*/history/loss_history.csv (history/ folder absent); per-epoch losses are in their progress.json.

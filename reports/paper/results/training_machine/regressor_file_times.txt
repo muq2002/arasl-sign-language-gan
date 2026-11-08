@@ -1,0 +1,2 @@
+-rwxrwxrwx 1 root root  9501952 2026-07-06 19:50:37.171988400 +0300 /mnt/c/Users/MustafaJK/arasl-sign-language-gan/outputs/cgan_B_128mp/checkpoints/landmark_regressor.weights.h5
+-rwxrwxrwx 1 root root 13620476 2026-07-06 12:29:27.321191500 +0300 /mnt/c/Users/MustafaJK/arasl-sign-language-gan/outputs/cgan_B_128mp/landmarks_128px.npy
